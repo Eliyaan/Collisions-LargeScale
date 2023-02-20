@@ -131,10 +131,7 @@ fn on_frame(mut app App) {
 						for oi ,mut other in app.list_opti[y_index][x_index]{
 							diff_x := parti.x - other.x
 							diff_y := parti.y - other.y
-							if diff_x < app.sqtwo_radius || diff_y < app.sqtwo_radius{
-								delta_x += diff_x/2
-								delta_y += diff_y/2  //Apply it to the other one ?
-							}else if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
+							if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
 								delta_x += diff_x/2
 								delta_y += diff_y/2  //Apply it to the other one ?
 							}						
