@@ -20,6 +20,8 @@ struct Particle{
 	old_y f64
 	acc_x f64
 	acc_y f64
+	delta_x
+	delta_y
 }
 
 
@@ -69,9 +71,8 @@ mut:
 
 	list_parti []Particle
 	list_opti [][][]&Particle
-	parti_size int = 10
+	parti_size int = 16
 	pow_radius int
-	sqtwo_radius f64
 }
 
 
@@ -99,8 +100,7 @@ fn main() {
     )
 
 	app.list_opti = [][][]&Particle{len:win_height/app.parti_size, init:[][]&Particle{len:win_width/app.parti_size, init:[]&Particle{cap:4}}}
-	app.pow_radius = app.parti_size*app.parti_size
-	app.sqtwo_radius = m.sqrt(2) * f64(app.parti_size)
+	app.pow_radius = (4*app.parti_size*app.parti_size)
     //lancement du programme/de la fenêtre
     app.gg.run()
 }
@@ -110,33 +110,51 @@ fn main() {
 
 
 fn on_frame(mut app App) {
-    app.gg.begin()
 	for mut parti in app.list_parti{
-		parti.accelerate(0, 0.5)
+		parti.accelerate(0, 0.1)
 		parti.update_pos()
 		parti.correct_constraints()
-		mut delta_x := 0.0
-		mut delta_y := 0.0
-		for other in app.list_parti{
-			diff_x := parti.x - other.x
-			diff_y := parti.y - other.y
-			if diff_x < app.sqtwo_radius || diff_y < app.sqtwo_radius{
-				println(diff_x)
-				println(diff_y)
-				delta_x += diff_x/2
-				delta_y += diff_y/2  //Apply it to the other one ?
-			}else if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
-				delta_x += diff_x/2
-				delta_y += diff_y/2  //Apply it to the other one ?
-			}						
+	}
+    //Draw
+	app.gg.begin()
+	for mut parti in app.list_parti{
+		for i in 0..1{
+			for mut other in app.list_parti{
+				if other != parti{
+					diff_x := parti.x - other.x
+					diff_y := parti.y - other.y
+					if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
+						if diff_x > 0{
+							parti.x += (app.parti_size - diff_x/2)
+							other.x -= (app.parti_size - diff_x/2)
+							parti.old_x = parti.x
+							other.old_x = other.x
+						}else if diff_x < 0{
+							parti.x += (-app.parti_size - diff_x/2)
+							other.x -= (-app.parti_size - diff_x/2)
+							parti.old_x = parti.x
+							other.old_x = other.x
+						}else{
+						}
+						if diff_y > 0{
+							parti.y += (app.parti_size - diff_y/2)
+							other.y -= (app.parti_size - diff_y/2)
+							parti.old_y = parti.y
+							other.old_y = other.y
+						}else if diff_y < 0{
+							parti.y += (-app.parti_size - diff_y/2)
+							other.y -= (-app.parti_size - diff_y/2)
+							parti.old_y = parti.y
+							other.old_y = other.y
+						}else{
+						}
+					}
+				}
+			}
 		}
-
-		parti.x += delta_x
-		parti.y += delta_y
 		parti.correct_constraints()
 		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), app.parti_size, gx.white)
 	}
-    //Draw
     app.gg.end()
 }
 
