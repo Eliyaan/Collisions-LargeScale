@@ -20,8 +20,8 @@ struct Particle{
 	old_y f64
 	acc_x f64
 	acc_y f64
-	delta_x
-	delta_y
+	delta_x f64
+	delta_y f64
 }
 
 
@@ -115,44 +115,38 @@ fn on_frame(mut app App) {
 		parti.update_pos()
 		parti.correct_constraints()
 	}
-    //Draw
-	app.gg.begin()
-	for mut parti in app.list_parti{
-		for i in 0..1{
+	for i in 0..1{
+		for mut parti in app.list_parti{
 			for mut other in app.list_parti{
 				if other != parti{
 					diff_x := parti.x - other.x
 					diff_y := parti.y - other.y
 					if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
 						if diff_x > 0{
-							parti.x += (app.parti_size - diff_x/2)
-							other.x -= (app.parti_size - diff_x/2)
-							parti.old_x = parti.x
-							other.old_x = other.x
+							parti.delta_x += (app.parti_size - diff_x/2)
 						}else if diff_x < 0{
-							parti.x += (-app.parti_size - diff_x/2)
-							other.x -= (-app.parti_size - diff_x/2)
-							parti.old_x = parti.x
-							other.old_x = other.x
+							parti.delta_x += (-app.parti_size - diff_x/2)
 						}else{
 						}
 						if diff_y > 0{
-							parti.y += (app.parti_size - diff_y/2)
-							other.y -= (app.parti_size - diff_y/2)
-							parti.old_y = parti.y
-							other.old_y = other.y
+							parti.delta_y += (app.parti_size - diff_y/2)
 						}else if diff_y < 0{
-							parti.y += (-app.parti_size - diff_y/2)
-							other.y -= (-app.parti_size - diff_y/2)
-							parti.old_y = parti.y
-							other.old_y = other.y
+							parti.delta_y += (-app.parti_size - diff_y/2)
 						}else{
 						}
 					}
 				}
 			}
+			parti.x += parti.delta_x
+			parti.y += parti.delta_y
+			parti.delta_x = 0
+			parti.delta_y = 0
+			parti.correct_constraints()
 		}
-		parti.correct_constraints()
+	}
+    //Draw
+	app.gg.begin()
+	for mut parti in app.list_parti{
 		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), app.parti_size, gx.white)
 	}
     app.gg.end()
@@ -179,6 +173,6 @@ fn on_event(e &gg.Event, mut app App){
 
 fn (mut app App) spawn_parti(x f32, y f32){
 	if x < win_width && y < win_height{
-		app.list_parti << Particle{x, y, app.parti_size, x, y, 0, 0}
+		app.list_parti << Particle{x, y, app.parti_size, x, y, 0, 0, 0, 0}
 	}
 }
