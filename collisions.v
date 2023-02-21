@@ -8,6 +8,9 @@ const (
     win_width    = 600
     win_height   = 600
     bg_color     = gx.black
+	dt = 1
+	big_circle_radius = 300
+	big_circle_pos = 300
 )
 
 [heap]
@@ -32,28 +35,36 @@ fn (mut parti Particle) update_pos(){
 	parti.old_x = parti.x
 	parti.old_y = parti.y
 
-	parti.x = parti.x + velocity_x + parti.acc_x 
-	parti.y = parti.y + velocity_y + parti.acc_y
+	parti.x = parti.x + velocity_x + parti.acc_x * dt * dt
+	parti.y = parti.y + velocity_y + parti.acc_y * dt * dt
 
-	parti.correct_constraints()
 }
 
 
-fn (mut parti Particle) correct_constraints(){
+fn (mut parti Particle) correct_constraints_square(){
 	if parti.y + parti.radius > win_height{
 		parti.y += win_height - (parti.y+parti.radius)
-		parti.old_y = parti.y
 	}else if parti.y - parti.radius < 0{
 		parti.y += -(parti.y-parti.radius)
-		parti.old_y = parti.y
 	}
 	if parti.x + parti.radius> win_width{
 		parti.x += win_width - (parti.x+parti.radius)
-		parti.old_x = parti.x
 	}
 	else if parti.x - parti.radius < 0{
 		parti.x += -(parti.x-parti.radius)
-		parti.old_x = parti.x
+	}
+}
+
+
+fn (mut parti Particle) correct_constraints_circle(){
+	to_obj_x := big_circle_pos - parti.x 
+	to_obj_y := big_circle_pos - parti.y
+	dist := m.sqrt(m.pow(to_obj_x,2)+m.pow(to_obj_y,2))
+	if dist > big_circle_radius - parti.radius{
+		n_x := to_obj_x/dist
+		n_y := to_obj_y/dist
+		parti.x = big_circle_pos - n_x * (big_circle_radius-parti.radius)
+		parti.y = big_circle_pos - n_y * (big_circle_radius-parti.radius)//thalès
 	}
 }
 
@@ -112,37 +123,12 @@ fn main() {
 fn on_frame(mut app App) {
 	for mut parti in app.list_parti{
 		parti.accelerate(0, 0.1)
-		parti.update_pos()
-		parti.correct_constraints()
 	}
-	for i in 0..1{
-		for mut parti in app.list_parti{
-			for mut other in app.list_parti{
-				if other != parti{
-					diff_x := parti.x - other.x
-					diff_y := parti.y - other.y
-					if diff_x*diff_x + diff_y*diff_y < app.pow_radius{
-						if diff_x > 0{
-							parti.delta_x += (app.parti_size - diff_x/2)
-						}else if diff_x < 0{
-							parti.delta_x += (-app.parti_size - diff_x/2)
-						}else{
-						}
-						if diff_y > 0{
-							parti.delta_y += (app.parti_size - diff_y/2)
-						}else if diff_y < 0{
-							parti.delta_y += (-app.parti_size - diff_y/2)
-						}else{
-						}
-					}
-				}
-			}
-			parti.x += parti.delta_x
-			parti.y += parti.delta_y
-			parti.delta_x = 0
-			parti.delta_y = 0
-			parti.correct_constraints()
-		}
+	for mut parti in app.list_parti{
+		parti.correct_constraints_circle()
+	}
+	for mut parti in app.list_parti{
+		parti.update_pos()
 	}
     //Draw
 	app.gg.begin()
