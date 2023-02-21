@@ -8,7 +8,7 @@ const (
     win_width    = 600
     win_height   = 600
     bg_color     = gx.black
-	dt = 1
+	dt = 0.016
 	big_circle_radius = 300
 	big_circle_pos = 300
 )
@@ -122,13 +122,13 @@ fn main() {
 
 fn on_frame(mut app App) {
 	for mut parti in app.list_parti{
-		parti.accelerate(0, 0.1)
-	}
-	for mut parti in app.list_parti{
-		parti.correct_constraints_circle()
+		parti.accelerate(0, 10000)
 	}
 	for mut parti in app.list_parti{
 		parti.update_pos()
+	}
+	for mut parti in app.list_parti{
+		parti.correct_constraints_circle()
 	}
     //Draw
 	app.gg.begin()
