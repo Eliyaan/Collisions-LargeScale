@@ -3,6 +3,7 @@ import gg
 import gx
 import rand as rd
 import math as m
+import time
 
 const (
     win_width    = 600
@@ -85,6 +86,12 @@ mut:
 	list_opti [][][]&Particle
 	parti_size int = 12
 	pow_radius int
+	fps_counter time.Duration
+	old_fps time.Duration
+	very_old_fps time.Duration
+	very_very_old_fps time.Duration
+	time_last_frame time.Time
+
 }
 
 
@@ -121,35 +128,38 @@ fn main() {
 
 fn (mut app App) solve_collisions(){
 	response_coef := 1.0
-	for mut parti in app.list_parti{
-		for mut other in app.list_parti{
-			if parti != other{
-				dist_x := parti.x - other.x
-				dist_y := parti.y - other.y
-                mut dist := dist_x * dist_x + dist_y * dist_y
-                min_dist := parti.radius + other.radius
-                // Check overlapping
-                if dist < min_dist * min_dist {
-                    dist  = m.sqrt(dist)
-                    n_x := dist_x / dist
-					n_y := dist_y / dist
-					delta := 0.5 * response_coef * (dist - min_dist)
-                    mass_ratio_a := (f64(parti.radius) / min_dist) * delta  //not just mass ratio
-                    mass_ratio_b := (f64(other.radius) / min_dist) * delta
-                    // Update positions
-                    parti.x -= n_x * (mass_ratio_b)
-					parti.y -= n_y * (mass_ratio_b)
-                    other.x += n_x * (mass_ratio_a)
-					other.y += n_y * (mass_ratio_a)
-                }
+	len := app.list_parti.len
+	for i in 0..len{
+		mut parti := &(app.list_parti[i])
+		for j := i+1; j < len; j+=1{
+			mut other := &(app.list_parti[j])
+			dist_x := parti.x - other.x
+			dist_y := parti.y - other.y
+			mut dist := dist_x * dist_x + dist_y * dist_y
+			min_dist := parti.radius + other.radius
+			// Check overlapping
+			if dist < min_dist * min_dist {
+				dist  = m.sqrt(dist)
+				n_x := dist_x / dist
+				n_y := dist_y / dist
+				delta := 0.5 * response_coef * (dist - min_dist)
+				mass_ratio_a := (f64(parti.radius) / min_dist) * delta  //not just mass ratio
+				mass_ratio_b := (f64(other.radius) / min_dist) * delta
+				// Update positions
+				parti.x -= n_x * (mass_ratio_b)
+				parti.y -= n_y * (mass_ratio_b)
+				other.x += n_x * (mass_ratio_a)
+				other.y += n_y * (mass_ratio_a)
 			}
+			
 		}
 	}
 }
 
 
 fn on_frame(mut app App) {
-	sub := 6.0
+
+	sub := 8.0
 	for i in 0..int(sub){
 		for mut parti in app.list_parti{
 			parti.accelerate(0, 10000/sub)
@@ -167,7 +177,13 @@ fn on_frame(mut app App) {
 	for parti in app.list_parti{
 		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*8%255),u8(parti.radius*16%255),u8(parti.radius*64%255), 255})
 	}
-	app.gg.draw_text(840, 55, "Nb particles' size: ${app.list_parti.len}", text_cfg)
+	app.gg.draw_text(840, 55, "Nb particles: ${app.list_parti.len}", text_cfg)
+	app.gg.draw_text(840, 85, "FPS: ${1000/((app.fps_counter+app.old_fps+app.very_old_fps+app.very_very_old_fps)/4+1)}", text_cfg)
+	app.very_very_old_fps = app.very_old_fps
+	app.very_old_fps = app.old_fps
+	app.old_fps = app.fps_counter
+	app.fps_counter = (time.now()-app.time_last_frame).milliseconds()
+	app.time_last_frame = time.now()
     app.gg.end()
 }
 
@@ -192,10 +208,10 @@ fn on_event(e &gg.Event, mut app App){
 
 fn (mut app App) spawn_parti(x f32, y f32){
 	if x < win_width && y < win_height{
-		app.list_parti << Particle{x, y, rd.int_in_range(3, 15) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+1, y+1, rd.int_in_range(3, 15) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+2, y+3, rd.int_in_range(3, 15) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+5, y+5, rd.int_in_range(3, 15) or {12}, x, y, 0, 0, 0, 0}
+		app.list_parti << Particle{x, y, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
+		app.list_parti << Particle{x+1, y+1, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
+		app.list_parti << Particle{x+2, y+3, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
+		app.list_parti << Particle{x+5, y+5, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
 
 	}
 }
