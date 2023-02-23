@@ -13,6 +13,10 @@ const (
 	big_circle_radius = 300
 	big_circle_pos = 300
 	text_cfg = gx.TextCfg{color: gx.white, size: 20, align: .left, vertical_align: .top}
+	response_coef = 1.0
+	half_response_coef = response_coef * 0.5
+	sub = 8.0
+	isub = int(sub)
 )
 
 [heap]
@@ -21,6 +25,7 @@ struct Particle{
     x f64
     y f64
 	radius int
+	fradius f32
 	old_x f64
 	old_y f64
 	acc_x f64
@@ -39,7 +44,6 @@ fn (mut parti Particle) update_pos(delta_time f64){
 
 	parti.x = parti.x + velocity_x + parti.acc_x * delta_time * delta_time
 	parti.y = parti.y + velocity_y + parti.acc_y * delta_time * delta_time
-
 }
 
 
@@ -61,12 +65,14 @@ fn (mut parti Particle) correct_constraints_square(){
 fn (mut parti Particle) correct_constraints_circle(){
 	to_obj_x := big_circle_pos - parti.x 
 	to_obj_y := big_circle_pos - parti.y
-	dist := m.sqrt(m.pow(to_obj_x,2)+m.pow(to_obj_y,2))
-	if dist > big_circle_radius - parti.radius{
+	mut dist := to_obj_x*to_obj_x+to_obj_y*to_obj_y
+	normal_dist := big_circle_radius - parti.radius
+	if dist > normal_dist*normal_dist{
+		dist= m.sqrt(dist)
 		n_x := to_obj_x/dist
 		n_y := to_obj_y/dist
-		parti.x = big_circle_pos - n_x * (big_circle_radius-parti.radius)
-		parti.y = big_circle_pos - n_y * (big_circle_radius-parti.radius)//thalès
+		parti.x = big_circle_pos - n_x * normal_dist
+		parti.y = big_circle_pos - n_y * normal_dist//thalès
 	}
 }
 
@@ -75,7 +81,6 @@ fn (mut parti Particle) accelerate(new_acc_x f64, new_acc_y f64){
 	parti.acc_x = new_acc_x
 	parti.acc_y = new_acc_y
 }
-
 
 [heap]
 struct App {
@@ -127,7 +132,6 @@ fn main() {
 
 
 fn (mut app App) solve_collisions(){
-	response_coef := 1.0
 	len := app.list_parti.len
 	for i in 0..len{
 		mut parti := &(app.list_parti[i])
@@ -142,9 +146,9 @@ fn (mut app App) solve_collisions(){
 				dist  = m.sqrt(dist)
 				n_x := dist_x / dist
 				n_y := dist_y / dist
-				delta := 0.5 * response_coef * (dist - min_dist)
-				mass_ratio_a := (f64(parti.radius) / min_dist) * delta  //not just mass ratio
-				mass_ratio_b := (f64(other.radius) / min_dist) * delta
+				delta := half_response_coef * (dist - min_dist)
+				mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
+				mass_ratio_b := (other.fradius / min_dist) * delta
 				// Update positions
 				parti.x -= n_x * (mass_ratio_b)
 				parti.y -= n_y * (mass_ratio_b)
@@ -158,9 +162,7 @@ fn (mut app App) solve_collisions(){
 
 
 fn on_frame(mut app App) {
-
-	sub := 8.0
-	for i in 0..int(sub){
+	for i in 0..isub{
 		for mut parti in app.list_parti{
 			parti.accelerate(0, 10000/sub)
 		}
@@ -169,7 +171,7 @@ fn on_frame(mut app App) {
 		}
 		app.solve_collisions()
 		for mut parti in app.list_parti{
-			parti.correct_constraints_circle()
+			parti.correct_constraints_square()
 		}
 	}
     //Draw
@@ -208,10 +210,9 @@ fn on_event(e &gg.Event, mut app App){
 
 fn (mut app App) spawn_parti(x f32, y f32){
 	if x < win_width && y < win_height{
-		app.list_parti << Particle{x, y, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+1, y+1, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+2, y+3, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
-		app.list_parti << Particle{x+5, y+5, rd.int_in_range(2, 10) or {12}, x, y, 0, 0, 0, 0}
-
+		for i in 0..5{
+			radius := rd.int_in_range(2, 10) or {12}
+			app.list_parti << Particle{x+i, y+i, radius, f32(radius), x, y, 0, 0, 0, 0}
+		}
 	}
 }
