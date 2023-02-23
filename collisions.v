@@ -32,6 +32,7 @@ struct Particle{
 	acc_y f64
 	delta_x f64
 	delta_y f64
+	pression f64
 }
 
 
@@ -91,12 +92,14 @@ mut:
 	list_opti [][][]&Particle
 	parti_size int = 12
 	pow_radius int
-	fps_counter time.Duration
-	old_fps time.Duration
-	very_old_fps time.Duration
-	very_very_old_fps time.Duration
+	fps_counter []time.Duration = []time.Duration{len: 30}
 	time_last_frame time.Time
 
+	pression_view bool = true
+	carre_circle bool = true
+	mouse_x f32
+	mouse_y f32
+	mouse_pressed bool
 }
 
 
@@ -142,7 +145,7 @@ fn (mut app App) solve_collisions(){
 			mut dist := dist_x * dist_x + dist_y * dist_y
 			min_dist := parti.radius + other.radius
 			// Check overlapping
-			if dist < min_dist * min_dist {
+			if dist < min_dist * min_dist && dist >= 1{
 				dist  = m.sqrt(dist)
 				n_x := dist_x / dist
 				n_y := dist_y / dist
@@ -150,10 +153,18 @@ fn (mut app App) solve_collisions(){
 				mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
 				mass_ratio_b := (other.fradius / min_dist) * delta
 				// Update positions
-				parti.x -= n_x * (mass_ratio_b)
-				parti.y -= n_y * (mass_ratio_b)
-				other.x += n_x * (mass_ratio_a)
-				other.y += n_y * (mass_ratio_a)
+				xb := n_x * (mass_ratio_b)
+				yb := n_y * (mass_ratio_b)
+				xa := n_x * (mass_ratio_a)
+				ya := n_y * (mass_ratio_a)
+				parti.x -= xb
+				parti.y -= yb
+				other.x += xa
+				other.y += ya
+				if app.pression_view{
+					parti.pression += m.abs(xb + yb)
+					other.pression += m.abs(xa + ya)
+				}
 			}
 			
 		}
@@ -162,35 +173,62 @@ fn (mut app App) solve_collisions(){
 
 
 fn on_frame(mut app App) {
-	for i in 0..isub{
+	if app.mouse_pressed{
+		app.spawn_parti()
+	}
+	for _ in 0..isub{
 		for mut parti in app.list_parti{
 			parti.accelerate(0, 10000/sub)
+			parti.pression = 0
 		}
 		for mut parti in app.list_parti{
 			parti.update_pos(dt/sub)
 		}
 		app.solve_collisions()
-		for mut parti in app.list_parti{
-			parti.correct_constraints_square()
+		if app.carre_circle{
+			for mut parti in app.list_parti{
+				parti.correct_constraints_circle()
+			}
+		}else{
+			for mut parti in app.list_parti{
+				parti.correct_constraints_square()
+			}
 		}
 	}
     //Draw
 	app.gg.begin()
-	for parti in app.list_parti{
+	if app.pression_view{
+		for parti in app.list_parti{
+			pression := parti.pression*82
+			if pression > 255{
+				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{163, 0, 38, 255})
+			}else{
+				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{255, 255-u8(pression), 255-u8(pression), 255})
+			}
+		}
+	}else{
+		for parti in app.list_parti{
 		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*8%255),u8(parti.radius*16%255),u8(parti.radius*64%255), 255})
+		}
 	}
+	
 	app.gg.draw_text(840, 55, "Nb particles: ${app.list_parti.len}", text_cfg)
-	app.gg.draw_text(840, 85, "FPS: ${1000/((app.fps_counter+app.old_fps+app.very_old_fps+app.very_very_old_fps)/4+1)}", text_cfg)
-	app.very_very_old_fps = app.very_old_fps
-	app.very_old_fps = app.old_fps
-	app.old_fps = app.fps_counter
-	app.fps_counter = (time.now()-app.time_last_frame).milliseconds()
+	mut fpstime := 0
+	for elem in app.fps_counter{
+		fpstime += elem
+	}
+	fpstime /= app.fps_counter.len
+	app.gg.draw_text(840, 85, "FPS: ${1000/(fpstime+1)}", text_cfg)
+	app.fps_counter.delete(0)
+	app.fps_counter << (time.now()-app.time_last_frame).milliseconds()
 	app.time_last_frame = time.now()
     app.gg.end()
 }
 
 
 fn on_event(e &gg.Event, mut app App){
+	app.mouse_x = e.mouse_x
+	app.mouse_y = e.mouse_y
     match e.typ {
         .key_down {
             match e.key_code {
@@ -200,7 +238,15 @@ fn on_event(e &gg.Event, mut app App){
         }
         .mouse_down {
             match e.mouse_button{
-                .left{app.spawn_parti(e.mouse_x, e.mouse_y)}
+                .left{app.mouse_pressed = true
+						}
+                else{}
+        }}
+		.mouse_up {
+            match e.mouse_button{
+                .left{
+						app.mouse_pressed = false
+						}
                 else{}
         }}
         else {}
@@ -208,11 +254,9 @@ fn on_event(e &gg.Event, mut app App){
 }
 
 
-fn (mut app App) spawn_parti(x f32, y f32){
-	if x < win_width && y < win_height{
-		for i in 0..5{
-			radius := rd.int_in_range(2, 10) or {12}
-			app.list_parti << Particle{x+i, y+i, radius, f32(radius), x, y, 0, 0, 0, 0}
-		}
+fn (mut app App) spawn_parti(){
+	if app.mouse_x < win_width && app.mouse_y < win_height{
+		radius := rd.int_in_range(6, 9) or {12}
+		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0}
 	}
 }
