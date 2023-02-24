@@ -8,15 +8,13 @@ import time
 const (
     win_width    = 600
     win_height   = 600
-    bg_color     = gx.black
+    bg_color     = gx.white
 	dt = 0.016
 	big_circle_radius = 300
 	big_circle_pos = 300
-	text_cfg = gx.TextCfg{color: gx.white, size: 20, align: .left, vertical_align: .top}
+	text_cfg = gx.TextCfg{color: gx.black, size: 20, align: .left, vertical_align: .top}
 	response_coef = 1.0
 	half_response_coef = response_coef * 0.5
-	sub = 8.0
-	isub = int(sub)
 )
 
 [heap]
@@ -95,18 +93,25 @@ mut:
 	fps_counter []time.Duration = []time.Duration{len: 30}
 	time_last_frame time.Time
 
-	pression_view bool = true
-	carre_circle bool = true
+	pression_view bool
+	carre_circle bool 
 	mouse_x f32
 	mouse_y f32
 	mouse_pressed bool
+	substeps f32 = 8.0
+	red_factor int = -2
+	green_factor int = 16
+	blue_factor int = 64
+
+	min_parti_size int = 2
+	max_parti_size int = 16
 }
 
 
-fn (mut app App) create_opti_list(){
+/*fn (mut app App) create_opti_list(){
 	for mut parti in app.list_parti{
 	}
-}
+}*/
 
 
 fn main() {
@@ -175,14 +180,15 @@ fn (mut app App) solve_collisions(){
 fn on_frame(mut app App) {
 	if app.mouse_pressed{
 		app.spawn_parti()
+		app.check_buttons()
 	}
-	for _ in 0..isub{
+	for _ in 0..int(app.substeps){
 		for mut parti in app.list_parti{
-			parti.accelerate(0, 10000/sub)
+			parti.accelerate(0, 10000/app.substeps)
 			parti.pression = 0
 		}
 		for mut parti in app.list_parti{
-			parti.update_pos(dt/sub)
+			parti.update_pos(dt/app.substeps)
 		}
 		app.solve_collisions()
 		if app.carre_circle{
@@ -197,6 +203,11 @@ fn on_frame(mut app App) {
 	}
     //Draw
 	app.gg.begin()
+	if app.carre_circle{
+		app.gg.draw_circle_filled(300, 300, 300, gx.black)
+	}else{
+		app.gg.draw_square_filled(0, 0, 600, gx.black)
+	}
 	if app.pression_view{
 		for parti in app.list_parti{
 			pression := parti.pression*82
@@ -208,20 +219,56 @@ fn on_frame(mut app App) {
 		}
 	}else{
 		for parti in app.list_parti{
-		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*8%255),u8(parti.radius*16%255),u8(parti.radius*64%255), 255})
+		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*app.red_factor%255),u8(parti.radius*app.green_factor%255),u8(parti.radius*app.blue_factor%255), 255})
 		}
 	}
+
 	
-	app.gg.draw_text(840, 55, "Nb particles: ${app.list_parti.len}", text_cfg)
 	mut fpstime := 0
 	for elem in app.fps_counter{
 		fpstime += elem
 	}
 	fpstime /= app.fps_counter.len
-	app.gg.draw_text(840, 85, "FPS: ${1000/(fpstime+1)}", text_cfg)
+	app.gg.draw_text(840, 585, "FPS: ${1000/(fpstime+1)}", text_cfg)
 	app.fps_counter.delete(0)
 	app.fps_counter << (time.now()-app.time_last_frame).milliseconds()
 	app.time_last_frame = time.now()
+
+	app.gg.draw_text(840, 555, "Nb particles: ${app.list_parti.len}", text_cfg)
+
+	app.gg.draw_text(840, 25, "Pression view: ", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 26, 20, 20, 4,  gx.Color{255,182,193,255})
+
+	app.gg.draw_text(840, 55, "Square/Circle: ", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 56, 20, 20, 4,  gx.Color{255,182,193,255})
+
+	app.gg.draw_text(840, 85, "Nb substeps: ${app.substeps}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 86, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 86, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 115, "Reset the particles: ", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 116, 20, 20, 4,  gx.Color{255,182,193,255})
+
+	app.gg.draw_text(840, 145, "Red Factor: ${app.red_factor}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 146, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 146, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 175, "Green Factor: ${app.green_factor}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 176, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 176, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 205, "Blue Factor: ${app.blue_factor}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 206, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 206, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 235, "Min parti size: ${app.min_parti_size}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 236, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 236, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 265, "Max parti size: ${app.max_parti_size}", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 266, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_rounded_rect_filled(1070, 266, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+
     app.gg.end()
 }
 
@@ -256,7 +303,52 @@ fn on_event(e &gg.Event, mut app App){
 
 fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
-		radius := rd.int_in_range(6, 9) or {12}
+		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
 		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0}
 	}
+}
+
+
+fn (mut app App) check_buttons(){
+    if app.mouse_x > 1040 && app.mouse_x < 1090{
+        if app.mouse_x < 1060{
+            match true{
+                (app.mouse_y > 26 && app.mouse_y < 46){app.pression_view = !app.pression_view
+					app.mouse_pressed = false}
+				(app.mouse_y > 56 && app.mouse_y < 76){app.carre_circle = !app.carre_circle
+					app.mouse_pressed = false}
+				(app.mouse_y > 86 && app.mouse_y < 106){app.substeps -= 1.0
+					app.mouse_pressed = false}
+				(app.mouse_y > 116 && app.mouse_y < 136){app.list_parti = []
+					app.mouse_pressed = false}
+				(app.mouse_y > 146 && app.mouse_y < 166){app.red_factor -= 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 176 && app.mouse_y < 196){app.green_factor -= 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 206 && app.mouse_y < 226){app.blue_factor -= 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size -= 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
+					app.mouse_pressed = false}
+                else{}
+            }
+        }else if app.mouse_x > 1070{
+            match true{
+                (app.mouse_y > 86 && app.mouse_y < 106){app.substeps += 1.0
+					app.mouse_pressed = false}
+				(app.mouse_y > 146 && app.mouse_y < 166){app.red_factor += 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 176 && app.mouse_y < 196){app.green_factor += 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 206 && app.mouse_y < 226){app.blue_factor += 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size += 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
+					app.mouse_pressed = false}
+                else{}
+            }
+        }
+    }
 }
