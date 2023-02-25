@@ -113,10 +113,10 @@ mut:
 
 
 fn (mut app App) init_opti_list(){
-	app.list_opti = [][][]&Particle{len:win_height/app.max_parti_size-1, init:[][]&Particle{len:win_width/app.max_parti_size-1, init:[]&Particle{}}}
+	app.list_opti = [][][]&Particle{len:win_height/(app.max_parti_size-1), init:[][]&Particle{len:win_width/(app.max_parti_size-1), init:[]&Particle{}}}
 	for mut parti in app.list_parti{
-		x_index := parti.x/app.max_parti_size-1
-		y_index := parti.y/app.max_parti_size-1
+		x_index := int(parti.x/(app.max_parti_size-1))
+		y_index := int(parti.y/(app.max_parti_size-1))
 		parti.id = app.list_opti[y_index][x_index].len
 		app.list_opti[y_index][x_index] << &parti
 	}
@@ -142,6 +142,7 @@ fn main() {
 
 	app.init_opti_list()
 	app.pow_radius = (4*app.parti_size*app.parti_size)
+
     //lancement du programme/de la fenêtre
     app.gg.run()
 }
@@ -149,39 +150,84 @@ fn main() {
 
 
 fn (mut app App) solve_collisions(){
-	len := app.list_parti.len
-	for i in 0..len{
-		mut parti := &(app.list_parti[i])
-		for j := i+1; j < len; j+=1{
-			mut other := &(app.list_parti[j])
-			dist_x := parti.x - other.x
-			dist_y := parti.y - other.y
-			mut dist := dist_x * dist_x + dist_y * dist_y
-			min_dist := parti.radius + other.radius
-			// Check overlapping
-			if dist < min_dist * min_dist && dist >= 1{
-				dist  = m.sqrt(dist)
-				n_x := dist_x / dist
-				n_y := dist_y / dist
-				delta := half_response_coef * (dist - min_dist)
-				mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
-				mass_ratio_b := (other.fradius / min_dist) * delta
-				// Update positions
-				xb := n_x * (mass_ratio_b)
-				yb := n_y * (mass_ratio_b)
-				xa := n_x * (mass_ratio_a)
-				ya := n_y * (mass_ratio_a)
-				parti.x -= xb
-				parti.y -= yb
-				other.x += xa
-				other.y += ya
-				if app.pression_view{
-					parti.pression += m.abs(xb + yb)
-					other.pression += m.abs(xa + ya)
+	for mut parti in app.list_parti{
+		x_i := int(parti.x/(app.max_parti_size-1))
+		y_i := int(parti.y/(app.max_parti_size-1))
+		app.list_opti[y_i][x_i].delete(parti.id)
+		for u in parti.id..app.list_opti[y_i][x_i].len{
+			app.list_opti[y_i][x_i][u].id -= 1
+		}
+		for y in -1..2{
+			y_index := y_i+y
+			if y_index >= 0 && y_index <win_height/(app.max_parti_size-1){
+				for x in -1..2{
+					x_index := x_i+x
+					if x_index >= 0 && x_index <win_width/(app.max_parti_size-1){
+						mut remove_particles := []Particle{cap:app.list_opti[y_index][x_index].len}
+						for mut other in app.list_opti[y_index][x_index]{
+							dist_x := parti.x - other.x
+							dist_y := parti.y - other.y
+							mut dist := dist_x * dist_x + dist_y * dist_y
+							min_dist := parti.radius + other.radius
+							// Check overlapping
+							if dist < min_dist * min_dist && dist >= 1{
+								dist  = m.sqrt(dist)
+								n_x := dist_x / dist
+								n_y := dist_y / dist
+								delta := half_response_coef * (dist - min_dist)
+								mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
+								mass_ratio_b := (other.fradius / min_dist) * delta
+								// Update positions
+								xb := n_x * (mass_ratio_b)
+								yb := n_y * (mass_ratio_b)
+								xa := n_x * (mass_ratio_a)
+								ya := n_y * (mass_ratio_a)
+								parti.x -= xb
+								parti.y -= yb
+								other.x += xa
+								other.y += ya
+								if app.pression_view{
+									parti.pression += m.abs(xb + yb)
+									other.pression += m.abs(xa + ya)
+								}
+								println(other.x)
+								if app.carre_circle{
+									other.correct_constraints_circle()
+								}else{
+									other.correct_constraints_square()
+								}
+								println(other.x)
+								println(&other.x)
+								remove_particles << &other
+								println(remove_particles[remove_particles.len-1])
+							}
+						}
+						for other_killed in remove_particles{
+							app.list_opti[y_index][x_index].delete(other_killed.id)
+							for u in other_killed.id..app.list_opti[y_index][x_index].len{
+								app.list_opti[y_index][x_index][u].id -= 1
+							}
+							new_loc_y := int(other_killed.y/(app.max_parti_size-1))
+							new_loc_x := int(other_killed.x/(app.max_parti_size-1))
+							println(other_killed.x)
+							println(new_loc_x)
+							println(new_loc_y)
+							app.list_opti[new_loc_y][new_loc_x] << &other_killed
+							app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1].id = app.list_opti[new_loc_y][new_loc_x].len-1
+						}
+					}
 				}
 			}
-			
 		}
+		if app.carre_circle{
+			parti.correct_constraints_circle()
+		}else{
+			parti.correct_constraints_square()
+		}
+		new_loc_y := int(parti.y/(app.max_parti_size-1))
+		new_loc_x := int(parti.x/(app.max_parti_size-1))
+		app.list_opti[new_loc_y][new_loc_x] << &parti
+		app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1].id = app.list_opti[new_loc_y][new_loc_x].len-1
 	}
 }
 
@@ -229,17 +275,17 @@ fn on_frame(mut app App) {
 		}
 		app.solve_collisions()
 		if app.portable_parti{
-			app.solve_portable_parti()
+			app.solve_portable_parti()  // TODO : reassign de list
 		}
-		if app.carre_circle{
-			for mut parti in app.list_parti{
-				parti.correct_constraints_circle()
-			}
-		}else{
-			for mut parti in app.list_parti{
-				parti.correct_constraints_square()
-			}
-		}
+		//if app.carre_circle{
+		//	for mut parti in app.list_parti{
+		//		parti.correct_constraints_circle()
+		//	}
+		//}else{
+		//	for mut parti in app.list_parti{
+		//		parti.correct_constraints_square()
+		//	}
+		//}
 	}
     //Draw
 	app.gg.begin()
@@ -356,6 +402,11 @@ fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
 		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0}
+		mut parti := &app.list_parti[app.list_parti.len-1]
+		x_index := int(parti.x/(app.max_parti_size-1))
+		y_index := int(parti.y/(app.max_parti_size-1))
+		parti.id = app.list_opti[y_index][x_index].len
+		app.list_opti[y_index][x_index] << parti
 	}
 }
 
