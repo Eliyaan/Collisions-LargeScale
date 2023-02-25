@@ -105,13 +105,12 @@ mut:
 
 	min_parti_size int = 2
 	max_parti_size int = 16
+
+	portable_parti_size int = 6
+	portable_parti bool
 }
 
 
-/*fn (mut app App) create_opti_list(){
-	for mut parti in app.list_parti{
-	}
-}*/
 
 
 fn main() {
@@ -177,9 +176,37 @@ fn (mut app App) solve_collisions(){
 }
 
 
+fn (mut app App) solve_portable_parti(){
+	for mut other in app.list_parti{
+		dist_x := app.mouse_x - other.x
+		dist_y := app.mouse_y - other.y
+		mut dist := dist_x * dist_x + dist_y * dist_y
+		min_dist := f32(app.portable_parti_size + other.radius)
+		// Check overlapping
+		if dist < min_dist * min_dist && dist >= 1{
+			dist  = m.sqrt(dist)
+			n_x := dist_x / dist
+			n_y := dist_y / dist
+			delta := half_response_coef * (dist - min_dist)
+			mass_ratio_a := (app.portable_parti_size / min_dist) * delta  //not just mass ratio
+			// Update positions
+			xa := n_x * (mass_ratio_a)
+			ya := n_y * (mass_ratio_a)
+			other.x += xa
+			other.y += ya
+			if app.pression_view{
+				other.pression += m.abs(xa + ya)
+			}
+		}
+	}
+}
+
+
 fn on_frame(mut app App) {
 	if app.mouse_pressed{
-		app.spawn_parti()
+		if !app.portable_parti{
+			app.spawn_parti()
+		}
 		app.check_buttons()
 	}
 	for _ in 0..int(app.substeps){
@@ -191,6 +218,9 @@ fn on_frame(mut app App) {
 			parti.update_pos(dt/app.substeps)
 		}
 		app.solve_collisions()
+		if app.portable_parti{
+			app.solve_portable_parti()
+		}
 		if app.carre_circle{
 			for mut parti in app.list_parti{
 				parti.correct_constraints_circle()
@@ -269,6 +299,14 @@ fn on_frame(mut app App) {
     app.gg.draw_rounded_rect_filled(1040, 266, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
 	app.gg.draw_rounded_rect_filled(1070, 266, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
 
+	app.gg.draw_text(840, 295, "Pick a rock (size->scroll): ", text_cfg)
+    app.gg.draw_rounded_rect_filled(1040, 296, 20, 20, 4,  gx.Color{255,182,193,255})
+
+
+	if app.portable_parti{
+		app.gg.draw_circle_filled(app.mouse_x, app.mouse_y, app.portable_parti_size, gx.gray)
+	}
+
     app.gg.end()
 }
 
@@ -296,6 +334,9 @@ fn on_event(e &gg.Event, mut app App){
 						}
                 else{}
         }}
+		.mouse_scroll{
+			app.portable_parti_size += int(e.scroll_y)/4
+		}
         else {}
     }
 }
@@ -330,6 +371,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size -= 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
+					app.mouse_pressed = false}
+				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
 					app.mouse_pressed = false}
                 else{}
             }
