@@ -31,6 +31,7 @@ struct Particle{
 	delta_x f64
 	delta_y f64
 	pression f64
+	id int
 }
 
 
@@ -111,6 +112,15 @@ mut:
 }
 
 
+fn (mut app App) init_opti_list(){
+	app.list_opti = [][][]&Particle{len:win_height/app.max_parti_size-1, init:[][]&Particle{len:win_width/app.max_parti_size-1, init:[]&Particle{}}}
+	for mut parti in app.list_parti{
+		x_index := parti.x/app.max_parti_size-1
+		y_index := parti.y/app.max_parti_size-1
+		parti.id = app.list_opti[y_index][x_index].len
+		app.list_opti[y_index][x_index] << &parti
+	}
+}
 
 
 fn main() {
@@ -130,7 +140,7 @@ fn main() {
         sample_count: 6
     )
 
-	app.list_opti = [][][]&Particle{len:win_height/app.parti_size, init:[][]&Particle{len:win_width/app.parti_size, init:[]&Particle{cap:4}}}
+	app.init_opti_list()
 	app.pow_radius = (4*app.parti_size*app.parti_size)
     //lancement du programme/de la fenêtre
     app.gg.run()
@@ -345,7 +355,7 @@ fn on_event(e &gg.Event, mut app App){
 fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
-		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0}
+		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0}
 	}
 }
 
