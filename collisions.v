@@ -109,13 +109,16 @@ mut:
 	min_parti_size int = 2
 	max_parti_size int = 16
 
+	array_width_max int
+	array_height_max int
+
 	portable_parti_size int = 6
 	portable_parti bool
 }
 
 
 fn (mut app App) init_opti_list(){
-	app.list_opti = [][][]&Particle{len:int(m.ceil(win_height/(2*(app.max_parti_size-1)))), init:[][]&Particle{len:int(m.ceil(win_width/(2*(app.max_parti_size-1)))), init:[]&Particle{}}}
+	app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 	for mut parti in app.list_parti{
 		x_index := int(parti.x/(2*(app.max_parti_size-1)))
 		y_index := int(parti.y/(2*(app.max_parti_size-1)))
@@ -146,6 +149,8 @@ fn main() {
 
 	app.init_opti_list()
 	app.pow_radius = (4*app.parti_size*app.parti_size)
+	app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
+	app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
 
     //lancement du programme/de la fenêtre
     app.gg.run()
@@ -161,10 +166,10 @@ fn (mut app App) solve_collisions(){
 		}
 		for y in -1..2{
 			y_index := parti.opti_y+y
-			if y_index >= 0 && y_index <m.ceil(win_height/(2*(app.max_parti_size-1))){
+			if y_index >= 0 && y_index < app.array_height_max{
 				for x in -1..2{
 					x_index := parti.opti_x+x
-					if x_index >= 0 && x_index <m.ceil(win_width/(2*(app.max_parti_size-1))){
+					if x_index >= 0 && x_index < app.array_width_max{
 						mut remove_particles := []&Particle{cap:app.list_opti[y_index][x_index].len}
 						for o_i, mut other in app.list_opti[y_index][x_index]{
 							dist_x := parti.x - other.x
@@ -433,6 +438,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size -= 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
+					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
+					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
 					app.mouse_pressed = false}
 				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
 					app.mouse_pressed = false}
@@ -451,6 +458,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size += 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
+					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
+					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
 					app.mouse_pressed = false}
                 else{}
             }
