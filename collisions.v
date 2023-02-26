@@ -5,6 +5,16 @@ import rand as rd
 import math as m
 import time
 
+
+/*
+Fix les array out of range 
+remet la sqrt et tout (dans la branch test mais sont stashed)
+
+
+
+*/
+
+
 const (
     win_width    = 600
     win_height   = 600
@@ -440,6 +450,7 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
 					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
 					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
+					app.list_parti = []
 					app.mouse_pressed = false}
 				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
 					app.mouse_pressed = false}
@@ -460,6 +471,7 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
 					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
 					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
+					app.list_parti = []
 					app.mouse_pressed = false}
                 else{}
             }
