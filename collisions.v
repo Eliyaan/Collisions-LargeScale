@@ -32,6 +32,8 @@ struct Particle{
 	delta_y f64
 	pression f64
 	id int
+	opti_y int
+	opti_x int
 }
 
 
@@ -151,20 +153,19 @@ fn main() {
 
 fn (mut app App) solve_collisions(){
 	for mut parti in app.list_parti{
-		x_i := int(parti.x/(app.max_parti_size-1))
-		y_i := int(parti.y/(app.max_parti_size-1))
-		app.list_opti[y_i][x_i].delete(parti.id)
-		for u in parti.id..app.list_opti[y_i][x_i].len{
-			app.list_opti[y_i][x_i][u].id -= 1
+		println(app.list_opti[parti.opti_y][parti.opti_x].len)
+		app.list_opti[parti.opti_y][parti.opti_x].delete(parti.id)
+		for u in parti.id..app.list_opti[parti.opti_y][parti.opti_x].len{
+			app.list_opti[parti.opti_y][parti.opti_x][u].id -= 1
 		}
 		for y in -1..2{
-			y_index := y_i+y
+			y_index := parti.opti_y+y
 			if y_index >= 0 && y_index <win_height/(app.max_parti_size-1){
 				for x in -1..2{
-					x_index := x_i+x
+					x_index := parti.opti_x+x
 					if x_index >= 0 && x_index <win_width/(app.max_parti_size-1){
-						mut remove_particles := []Particle{cap:app.list_opti[y_index][x_index].len}
-						for mut other in app.list_opti[y_index][x_index]{
+						mut remove_particles := []&Particle{cap:app.list_opti[y_index][x_index].len}
+						for o_i, mut other in app.list_opti[y_index][x_index]{
 							dist_x := parti.x - other.x
 							dist_y := parti.y - other.y
 							mut dist := dist_x * dist_x + dist_y * dist_y
@@ -190,30 +191,31 @@ fn (mut app App) solve_collisions(){
 									parti.pression += m.abs(xb + yb)
 									other.pression += m.abs(xa + ya)
 								}
-								println(other.x)
 								if app.carre_circle{
 									other.correct_constraints_circle()
 								}else{
 									other.correct_constraints_square()
 								}
-								println(other.x)
-								println(&other.x)
-								remove_particles << &other
-								println(remove_particles[remove_particles.len-1])
+								remove_particles << app.list_opti[y_index][x_index][o_i]
 							}
 						}
-						for other_killed in remove_particles{
+						for ok_i, mut other_killed in remove_particles{
 							app.list_opti[y_index][x_index].delete(other_killed.id)
 							for u in other_killed.id..app.list_opti[y_index][x_index].len{
 								app.list_opti[y_index][x_index][u].id -= 1
 							}
+							if app.carre_circle{
+								other_killed.correct_constraints_circle()
+							}else{
+								other_killed.correct_constraints_square()
+							}
 							new_loc_y := int(other_killed.y/(app.max_parti_size-1))
 							new_loc_x := int(other_killed.x/(app.max_parti_size-1))
-							println(other_killed.x)
-							println(new_loc_x)
-							println(new_loc_y)
-							app.list_opti[new_loc_y][new_loc_x] << &other_killed
-							app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1].id = app.list_opti[new_loc_y][new_loc_x].len-1
+							app.list_opti[new_loc_y][new_loc_x] << remove_particles[ok_i]
+							mut new_other := &app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
+							new_other.id = app.list_opti[new_loc_y][new_loc_x].len-1
+							new_other.opti_x = new_loc_x
+							new_other.opti_y = new_loc_y
 						}
 					}
 				}
@@ -227,7 +229,10 @@ fn (mut app App) solve_collisions(){
 		new_loc_y := int(parti.y/(app.max_parti_size-1))
 		new_loc_x := int(parti.x/(app.max_parti_size-1))
 		app.list_opti[new_loc_y][new_loc_x] << &parti
-		app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1].id = app.list_opti[new_loc_y][new_loc_x].len-1
+		mut new_parti := app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
+		new_parti.id = app.list_opti[new_loc_y][new_loc_x].len-1
+		new_parti.opti_x = new_loc_x
+		new_parti.opti_y = new_loc_y
 	}
 }
 
@@ -277,15 +282,6 @@ fn on_frame(mut app App) {
 		if app.portable_parti{
 			app.solve_portable_parti()  // TODO : reassign de list
 		}
-		//if app.carre_circle{
-		//	for mut parti in app.list_parti{
-		//		parti.correct_constraints_circle()
-		//	}
-		//}else{
-		//	for mut parti in app.list_parti{
-		//		parti.correct_constraints_square()
-		//	}
-		//}
 	}
     //Draw
 	app.gg.begin()
@@ -401,11 +397,13 @@ fn on_event(e &gg.Event, mut app App){
 fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
-		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0}
+		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0, 0, 0}
 		mut parti := &app.list_parti[app.list_parti.len-1]
 		x_index := int(parti.x/(app.max_parti_size-1))
 		y_index := int(parti.y/(app.max_parti_size-1))
 		parti.id = app.list_opti[y_index][x_index].len
+		parti.opti_x = x_index
+		parti.opti_y = y_index
 		app.list_opti[y_index][x_index] << parti
 	}
 }
