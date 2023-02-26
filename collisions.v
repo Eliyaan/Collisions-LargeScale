@@ -50,12 +50,12 @@ fn (mut parti Particle) update_pos(delta_time f64){
 
 
 fn (mut parti Particle) correct_constraints_square(){
-	if parti.y + parti.radius > win_height{
+	if parti.y + parti.radius >= win_height{
 		parti.y += win_height - (parti.y+parti.radius)
 	}else if parti.y - parti.radius < 0{
 		parti.y += -(parti.y-parti.radius)
 	}
-	if parti.x + parti.radius> win_width{
+	if parti.x + parti.radius >= win_width{
 		parti.x += win_width - (parti.x+parti.radius)
 	}
 	else if parti.x - parti.radius < 0{
@@ -115,11 +115,13 @@ mut:
 
 
 fn (mut app App) init_opti_list(){
-	app.list_opti = [][][]&Particle{len:win_height/(app.max_parti_size-1), init:[][]&Particle{len:win_width/(app.max_parti_size-1), init:[]&Particle{}}}
+	app.list_opti = [][][]&Particle{len:int(m.ceil(win_height/(2*(app.max_parti_size-1)))), init:[][]&Particle{len:int(m.ceil(win_width/(2*(app.max_parti_size-1)))), init:[]&Particle{}}}
 	for mut parti in app.list_parti{
-		x_index := int(parti.x/(app.max_parti_size-1))
-		y_index := int(parti.y/(app.max_parti_size-1))
+		x_index := int(parti.x/(2*(app.max_parti_size-1)))
+		y_index := int(parti.y/(2*(app.max_parti_size-1)))
 		parti.id = app.list_opti[y_index][x_index].len
+		parti.opti_x = x_index
+		parti.opti_y = y_index
 		app.list_opti[y_index][x_index] << &parti
 	}
 }
@@ -159,10 +161,10 @@ fn (mut app App) solve_collisions(){
 		}
 		for y in -1..2{
 			y_index := parti.opti_y+y
-			if y_index >= 0 && y_index <win_height/(app.max_parti_size-1){
+			if y_index >= 0 && y_index <m.ceil(win_height/(2*(app.max_parti_size-1))){
 				for x in -1..2{
 					x_index := parti.opti_x+x
-					if x_index >= 0 && x_index <win_width/(app.max_parti_size-1){
+					if x_index >= 0 && x_index <m.ceil(win_width/(2*(app.max_parti_size-1))){
 						mut remove_particles := []&Particle{cap:app.list_opti[y_index][x_index].len}
 						for o_i, mut other in app.list_opti[y_index][x_index]{
 							dist_x := parti.x - other.x
@@ -208,13 +210,12 @@ fn (mut app App) solve_collisions(){
 							}else{
 								other_killed.correct_constraints_square()
 							}
-							new_loc_y := int(other_killed.y/(app.max_parti_size-1))
-							new_loc_x := int(other_killed.x/(app.max_parti_size-1))
+							new_loc_y := int(other_killed.y/(2*(app.max_parti_size-1)))
+							new_loc_x := int(other_killed.x/(2*(app.max_parti_size-1)))
 							app.list_opti[new_loc_y][new_loc_x] << remove_particles[ok_i]
-							mut new_other := &app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
-							new_other.id = app.list_opti[new_loc_y][new_loc_x].len-1
-							new_other.opti_x = new_loc_x
-							new_other.opti_y = new_loc_y
+							other_killed.id = app.list_opti[new_loc_y][new_loc_x].len-1
+							other_killed.opti_x = new_loc_x
+							other_killed.opti_y = new_loc_y
 						}
 					}
 				}
@@ -225,13 +226,12 @@ fn (mut app App) solve_collisions(){
 		}else{
 			parti.correct_constraints_square()
 		}
-		new_loc_y := int(parti.y/(app.max_parti_size-1))
-		new_loc_x := int(parti.x/(app.max_parti_size-1))
+		new_loc_y := int(parti.y/(2*(app.max_parti_size-1)))
+		new_loc_x := int(parti.x/(2*(app.max_parti_size-1)))
 		app.list_opti[new_loc_y][new_loc_x] << &parti
-		mut new_parti := &app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
-		new_parti.id = app.list_opti[new_loc_y][new_loc_x].len-1
-		new_parti.opti_x = new_loc_x
-		new_parti.opti_y = new_loc_y
+		parti.id = app.list_opti[new_loc_y][new_loc_x].len-1
+		parti.opti_x = new_loc_x
+		parti.opti_y = new_loc_y
 	}
 }
 
@@ -269,7 +269,6 @@ fn on_frame(mut app App) {
 		}
 		app.check_buttons()
 	}
-	//app.init_opti_list()
 	for _ in 0..int(app.substeps){
 		for mut parti in app.list_parti{
 			parti.accelerate(0, 10000/app.substeps)
@@ -278,6 +277,17 @@ fn on_frame(mut app App) {
 		for mut parti in app.list_parti{
 			parti.update_pos(dt/app.substeps)
 		}
+		if app.carre_circle{
+			for mut parti in app.list_parti{
+				parti.correct_constraints_circle()
+			}
+		}else{
+			for mut parti in app.list_parti{
+				parti.correct_constraints_square()
+			}
+		}
+		app.init_opti_list()
+		
 		app.solve_collisions()
 		if app.portable_parti{
 			app.solve_portable_parti()  // TODO : reassign de list
@@ -398,13 +408,14 @@ fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
 		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0, 0, 0}
-		mut parti := &app.list_parti[app.list_parti.len-1]
-		x_index := int(parti.x/(app.max_parti_size-1))
-		y_index := int(parti.y/(app.max_parti_size-1))
-		parti.id = app.list_opti[y_index][x_index].len
-		parti.opti_x = x_index
-		parti.opti_y = y_index
-		app.list_opti[y_index][x_index] << parti
+		//mut parti := &app.list_parti[app.list_parti.len-1]
+		//x_index := int(parti.x/(2*(app.max_parti_size-1)))
+		//y_index := int(parti.y/(2*(app.max_parti_size-1)))
+		//parti.id = app.list_opti[y_index][x_index].len
+		//parti.opti_x = x_index
+		//parti.opti_y = y_index
+		//app.list_opti[y_index][x_index] << parti
+		//println(app.list_opti[y_index][x_index].last())
 	}
 }
 
