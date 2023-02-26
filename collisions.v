@@ -152,7 +152,7 @@ fn main() {
 }
 
 
-
+[direct_array_access]
 fn (mut app App) solve_collisions(){
 	for mut parti in app.list_parti{
 		app.list_opti[parti.opti_y][parti.opti_x].delete(parti.id)
@@ -408,14 +408,6 @@ fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
 		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0, 0, 0}
-		//mut parti := &app.list_parti[app.list_parti.len-1]
-		//x_index := int(parti.x/(2*(app.max_parti_size-1)))
-		//y_index := int(parti.y/(2*(app.max_parti_size-1)))
-		//parti.id = app.list_opti[y_index][x_index].len
-		//parti.opti_x = x_index
-		//parti.opti_y = y_index
-		//app.list_opti[y_index][x_index] << parti
-		//println(app.list_opti[y_index][x_index].last())
 	}
 }
 
