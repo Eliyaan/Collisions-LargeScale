@@ -153,7 +153,6 @@ fn main() {
 
 fn (mut app App) solve_collisions(){
 	for mut parti in app.list_parti{
-		println(app.list_opti[parti.opti_y][parti.opti_x].len)
 		app.list_opti[parti.opti_y][parti.opti_x].delete(parti.id)
 		for u in parti.id..app.list_opti[parti.opti_y][parti.opti_x].len{
 			app.list_opti[parti.opti_y][parti.opti_x][u].id -= 1
@@ -229,7 +228,7 @@ fn (mut app App) solve_collisions(){
 		new_loc_y := int(parti.y/(app.max_parti_size-1))
 		new_loc_x := int(parti.x/(app.max_parti_size-1))
 		app.list_opti[new_loc_y][new_loc_x] << &parti
-		mut new_parti := app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
+		mut new_parti := &app.list_opti[new_loc_y][new_loc_x][app.list_opti[new_loc_y][new_loc_x].len-1]
 		new_parti.id = app.list_opti[new_loc_y][new_loc_x].len-1
 		new_parti.opti_x = new_loc_x
 		new_parti.opti_y = new_loc_y
@@ -270,6 +269,7 @@ fn on_frame(mut app App) {
 		}
 		app.check_buttons()
 	}
+	//app.init_opti_list()
 	for _ in 0..int(app.substeps){
 		for mut parti in app.list_parti{
 			parti.accelerate(0, 10000/app.substeps)
