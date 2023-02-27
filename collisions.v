@@ -8,7 +8,7 @@ import time
 
 /*
 Fix les array out of range 
-remet la sqrt et tout (dans la branch test mais sont stashed)
+remet la sqrt puis bidouiller avec les deux autres fonctions et tout (dans la branch test mais sont stashed)
 
 
 
@@ -159,8 +159,8 @@ fn main() {
 
 	app.init_opti_list()
 	app.pow_radius = (4*app.parti_size*app.parti_size)
-	app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
-	app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
+	app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
+	app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
 
     //lancement du programme/de la fenêtre
     app.gg.run()
@@ -448,8 +448,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size -= 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
-					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
-					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
+					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
+					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
 					app.list_parti = []
 					app.mouse_pressed = false}
 				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
@@ -469,8 +469,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size += 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
-					app.array_height_max = int(m.ceil(win_height/(2*(app.max_parti_size-1))))
-					app.array_width_max = int(m.ceil(win_width/(2*(app.max_parti_size-1))))
+					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
+					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
 					app.list_parti = []
 					app.mouse_pressed = false}
                 else{}
