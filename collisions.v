@@ -27,6 +27,27 @@ const (
 	half_response_coef = response_coef * 0.5
 )
 
+
+[inline]
+fn sqrt(a f64) f64 {
+	if a == 0.0 {
+		return a
+	}
+	mut x := a
+	z, ex := m.frexp(x)  ///////////////Need opti
+	w := x
+	
+	x = 4.17e-1 + 5.90e-1 * z
+	if (ex & 1) != 0 {
+		x *= 1.41
+	}
+	x = m.scalbn(x, ex >> 1)  ///////////Need opti
+	
+	x = 0.5 * (x + w / x)
+	return x
+}
+
+
 [heap]
 struct Particle{
     mut:
@@ -80,7 +101,7 @@ fn (mut parti Particle) correct_constraints_circle(){
 	mut dist := to_obj_x*to_obj_x+to_obj_y*to_obj_y
 	normal_dist := big_circle_radius - parti.radius
 	if dist > normal_dist*normal_dist{
-		dist= m.sqrt(dist)
+		dist = sqrt(dist)
 		n_x := to_obj_x/dist
 		n_y := to_obj_y/dist
 		parti.x = big_circle_pos - n_x * normal_dist
@@ -126,9 +147,13 @@ mut:
 	portable_parti bool
 }
 
-
+[direct_array_access]
 fn (mut app App) init_opti_list(){
-	app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
+	for mut list_of_list in app.list_opti{
+		for mut liste in list_of_list{
+			liste.clear()
+		}
+	}
 	for mut parti in app.list_parti{
 		x_index := int(parti.x/(2*(app.max_parti_size-1)))
 		y_index := int(parti.y/(2*(app.max_parti_size-1)))
@@ -157,10 +182,10 @@ fn main() {
         sample_count: 6
     )
 
-	app.init_opti_list()
 	app.pow_radius = (4*app.parti_size*app.parti_size)
 	app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
 	app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+	app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 
     //lancement du programme/de la fenêtre
     app.gg.run()
@@ -170,17 +195,19 @@ fn main() {
 [direct_array_access]
 fn (mut app App) solve_collisions(){
 	for mut parti in app.list_parti{
-		app.list_opti[parti.opti_y][parti.opti_x].delete(parti.id)
-		for u in parti.id..app.list_opti[parti.opti_y][parti.opti_x].len{
-			app.list_opti[parti.opti_y][parti.opti_x][u].id -= 1
+		mut array_dest := &app.list_opti[parti.opti_y][parti.opti_x]
+		array_dest.delete(parti.id)
+		for u in parti.id..array_dest.len{
+			array_dest[u].id -= 1
 		}
+		mut remove_particles := []&Particle{}
 		for y in -1..2{
 			y_index := parti.opti_y+y
 			if y_index >= 0 && y_index < app.array_height_max{
 				for x in -1..2{
 					x_index := parti.opti_x+x
 					if x_index >= 0 && x_index < app.array_width_max{
-						mut remove_particles := []&Particle{cap:app.list_opti[y_index][x_index].len}
+						remove_particles.clear()
 						for o_i, mut other in app.list_opti[y_index][x_index]{
 							dist_x := parti.x - other.x
 							dist_y := parti.y - other.y
@@ -188,7 +215,7 @@ fn (mut app App) solve_collisions(){
 							min_dist := parti.radius + other.radius
 							// Check overlapping
 							if dist < min_dist * min_dist && dist >= 1{
-								dist  = m.sqrt(dist)
+								dist  = sqrt(dist)
 								n_x := dist_x / dist
 								n_y := dist_y / dist
 								delta := half_response_coef * (dist - min_dist)
@@ -259,7 +286,7 @@ fn (mut app App) solve_portable_parti(){
 		min_dist := f32(app.portable_parti_size + other.radius)
 		// Check overlapping
 		if dist < min_dist * min_dist && dist >= 1{
-			dist  = m.sqrt(dist)
+			dist  = sqrt(dist)
 			n_x := dist_x / dist
 			n_y := dist_y / dist
 			delta := half_response_coef * (dist - min_dist)
@@ -450,6 +477,7 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
 					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
 					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+					app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 					app.list_parti = []
 					app.mouse_pressed = false}
 				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
@@ -471,6 +499,7 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
 					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
 					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+					app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 					app.list_parti = []
 					app.mouse_pressed = false}
                 else{}
