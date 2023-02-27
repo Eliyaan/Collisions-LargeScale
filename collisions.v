@@ -181,7 +181,9 @@ mut:
 fn (mut app App) init_opti_list(){
 	for mut list_of_list in app.list_opti{
 		for mut liste in list_of_list{
-			liste.clear()
+			if liste.len > 0{
+				liste.clear()
+			}
 		}
 	}
 	for mut parti in app.list_parti{
