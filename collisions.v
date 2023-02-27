@@ -208,7 +208,8 @@ fn (mut app App) solve_collisions(){
 					x_index := parti.opti_x+x
 					if x_index >= 0 && x_index < app.array_width_max{
 						remove_particles.clear()
-						for o_i, mut other in app.list_opti[y_index][x_index]{
+						array_dest = &app.list_opti[y_index][x_index]
+						for o_i, mut other in array_dest{
 							dist_x := parti.x - other.x
 							dist_y := parti.y - other.y
 							mut dist := dist_x * dist_x + dist_y * dist_y
@@ -239,13 +240,13 @@ fn (mut app App) solve_collisions(){
 								}else{
 									other.correct_constraints_square()
 								}
-								remove_particles << app.list_opti[y_index][x_index][o_i]
+								remove_particles << array_dest[o_i]
 							}
 						}
 						for ok_i, mut other_killed in remove_particles{
-							app.list_opti[y_index][x_index].delete(other_killed.id)
-							for u in other_killed.id..app.list_opti[y_index][x_index].len{
-								app.list_opti[y_index][x_index][u].id -= 1
+							array_dest.delete(other_killed.id)
+							for u in other_killed.id..array_dest.len{
+								array_dest[u].id -= 1
 							}
 							if app.carre_circle{
 								other_killed.correct_constraints_circle()
