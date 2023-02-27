@@ -27,6 +27,32 @@ const (
 	half_response_coef = response_coef * 0.5
 )
 
+[inline]
+fn f64_bits(f f64) u64 {
+	p := *unsafe { &u64(&f) }
+	return p
+}
+
+[inline]
+fn f64_from_bits(b u64) f64 {
+	p := *unsafe { &f64(&b) }
+	return p
+}
+
+[inline]
+fn frexp(x f64) (f64, int) {
+	mut y := f64_bits(x)
+	e_ := int((y >> 52) & 0x7ff) - 0x3fe
+	y &= u64(0x800fffffffffffff)
+	y |= u64(0x3fe0000000000000)
+	return f64_from_bits(y), e_
+}
+
+[inline]
+fn scalbn(x f64, n_ int) f64 {
+	return x * f64_from_bits(u64((0x3ff + n_)) << 52)
+}
+
 
 [inline]
 fn sqrt(a f64) f64 {
@@ -34,15 +60,14 @@ fn sqrt(a f64) f64 {
 		return a
 	}
 	mut x := a
-	z, ex := m.frexp(x)  ///////////////Need opti
+	z, ex := frexp(x)
 	w := x
 	
 	x = 4.17e-1 + 5.90e-1 * z
 	if (ex & 1) != 0 {
 		x *= 1.41
 	}
-	x = m.scalbn(x, ex >> 1)  ///////////Need opti
-	
+	x = scalbn(x, ex >> 1)
 	x = 0.5 * (x + w / x)
 	return x
 }
@@ -68,6 +93,7 @@ struct Particle{
 }
 
 
+[inline]
 fn (mut parti Particle) update_pos(delta_time f64){
 	velocity_x := parti.x - parti.old_x
 	velocity_y := parti.y - parti.old_y
@@ -80,6 +106,7 @@ fn (mut parti Particle) update_pos(delta_time f64){
 }
 
 
+[inline]
 fn (mut parti Particle) correct_constraints_square(){
 	if parti.y + parti.radius >= win_height{
 		parti.y += win_height - (parti.y+parti.radius)
@@ -95,6 +122,7 @@ fn (mut parti Particle) correct_constraints_square(){
 }
 
 
+[inline]
 fn (mut parti Particle) correct_constraints_circle(){
 	to_obj_x := big_circle_pos - parti.x 
 	to_obj_y := big_circle_pos - parti.y
@@ -110,10 +138,12 @@ fn (mut parti Particle) correct_constraints_circle(){
 }
 
 
+[inline]
 fn (mut parti Particle) accelerate(new_acc_x f64, new_acc_y f64){
 	parti.acc_x = new_acc_x
 	parti.acc_y = new_acc_y
 }
+
 
 [heap]
 struct App {
@@ -165,6 +195,7 @@ fn (mut app App) init_opti_list(){
 }
 
 
+[inline]
 fn main() {
     mut app := &App{
         gg: 0
@@ -193,12 +224,13 @@ fn main() {
 
 
 [direct_array_access]
+[inline]
 fn (mut app App) solve_collisions(){
 	for mut parti in app.list_parti{
 		mut array_dest := &app.list_opti[parti.opti_y][parti.opti_x]
 		array_dest.delete(parti.id)
 		for u in parti.id..array_dest.len{
-			array_dest[u].id -= 1
+			unsafe{array_dest[u].id -= 1}
 		}
 		mut remove_particles := []&Particle{}
 		for y in -1..2{
@@ -216,7 +248,7 @@ fn (mut app App) solve_collisions(){
 							min_dist := parti.radius + other.radius
 							// Check overlapping
 							if dist < min_dist * min_dist && dist >= 1{
-								dist  = sqrt(dist)
+								dist = sqrt(dist)
 								n_x := dist_x / dist
 								n_y := dist_y / dist
 								delta := half_response_coef * (dist - min_dist)
@@ -240,13 +272,13 @@ fn (mut app App) solve_collisions(){
 								}else{
 									other.correct_constraints_square()
 								}
-								remove_particles << array_dest[o_i]
+								remove_particles << unsafe{array_dest[o_i]}
 							}
 						}
 						for ok_i, mut other_killed in remove_particles{
 							array_dest.delete(other_killed.id)
 							for u in other_killed.id..array_dest.len{
-								array_dest[u].id -= 1
+								unsafe{array_dest[u].id -= 1}
 							}
 							if app.carre_circle{
 								other_killed.correct_constraints_circle()
@@ -279,6 +311,8 @@ fn (mut app App) solve_collisions(){
 }
 
 
+[direct_array_access]
+[inline]
 fn (mut app App) solve_portable_parti(){
 	for mut other in app.list_parti{
 		dist_x := app.mouse_x - other.x
@@ -305,6 +339,8 @@ fn (mut app App) solve_portable_parti(){
 }
 
 
+[direct_array_access]
+[inline]
 fn on_frame(mut app App) {
 	if app.mouse_pressed{
 		if !app.portable_parti{
@@ -416,6 +452,7 @@ fn on_frame(mut app App) {
 }
 
 
+[direct_array_access]
 fn on_event(e &gg.Event, mut app App){
 	app.mouse_x = e.mouse_x
 	app.mouse_y = e.mouse_y
@@ -447,6 +484,7 @@ fn on_event(e &gg.Event, mut app App){
 }
 
 
+[inline]
 fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
 		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
@@ -455,6 +493,7 @@ fn (mut app App) spawn_parti(){
 }
 
 
+[inline]
 fn (mut app App) check_buttons(){
     if app.mouse_x > 1040 && app.mouse_x < 1090{
         if app.mouse_x < 1060{
