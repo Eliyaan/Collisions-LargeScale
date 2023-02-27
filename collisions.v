@@ -210,7 +210,7 @@ fn main() {
         frame_fn: on_frame
 		event_fn: on_event
 		fullscreen: true
-        sample_count: 6
+        sample_count: 4
     )
 
 	app.pow_radius = (4*app.parti_size*app.parti_size)
@@ -226,20 +226,20 @@ fn main() {
 [direct_array_access]
 [inline]
 fn (mut app App) solve_collisions(){
+	mut remove_particles := []&Particle{}
 	for mut parti in app.list_parti{
 		mut array_dest := &app.list_opti[parti.opti_y][parti.opti_x]
 		array_dest.delete(parti.id)
 		for u in parti.id..array_dest.len{
 			unsafe{array_dest[u].id -= 1}
 		}
-		mut remove_particles := []&Particle{}
 		for y in -1..2{
 			y_index := parti.opti_y+y
 			if y_index >= 0 && y_index < app.array_height_max{
 				for x in -1..2{
 					x_index := parti.opti_x+x
 					if x_index >= 0 && x_index < app.array_width_max{
-						remove_particles.clear()
+						remove_particles = []
 						array_dest = &app.list_opti[y_index][x_index]
 						for o_i, mut other in array_dest{
 							dist_x := parti.x - other.x
@@ -390,7 +390,7 @@ fn on_frame(mut app App) {
 		}
 	}else{
 		for parti in app.list_parti{
-		app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*app.red_factor%255),u8(parti.radius*app.green_factor%255),u8(parti.radius*app.blue_factor%255), 255})
+			app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius*app.red_factor%255),u8(parti.radius*app.green_factor%255),u8(parti.radius*app.blue_factor%255), 255})
 		}
 	}
 
@@ -408,40 +408,40 @@ fn on_frame(mut app App) {
 	app.gg.draw_text(840, 555, "Nb particles: ${app.list_parti.len}", text_cfg)
 
 	app.gg.draw_text(840, 25, "Pression view: ", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 26, 20, 20, 4,  gx.Color{255,182,193,255})
+    app.gg.draw_square_filled(1040, 26, 20,  gx.Color{255,182,193,255})
 
 	app.gg.draw_text(840, 55, "Square/Circle: ", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 56, 20, 20, 4,  gx.Color{255,182,193,255})
+    app.gg.draw_square_filled(1040, 56, 20,  gx.Color{255,182,193,255})
 
 	app.gg.draw_text(840, 85, "Nb substeps: ${app.substeps}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 86, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 86, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 86, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 86, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 115, "Reset the particles: ", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 116, 20, 20, 4,  gx.Color{255,182,193,255})
+    app.gg.draw_square_filled(1040, 116, 20,  gx.Color{255,182,193,255})
 
 	app.gg.draw_text(840, 145, "Red Factor: ${app.red_factor}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 146, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 146, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 146, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 146, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 175, "Green Factor: ${app.green_factor}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 176, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 176, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 176, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 176, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 205, "Blue Factor: ${app.blue_factor}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 206, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 206, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 206, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 206, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 235, "Min parti size: ${app.min_parti_size}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 236, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 236, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 236, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 236, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 265, "Max parti size: ${app.max_parti_size}", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 266, 20, 20, 4,  gx.Color{r: 230, g: 200, b: 255})
-	app.gg.draw_rounded_rect_filled(1070, 266, 20, 20, 4,  gx.Color{r: 255, g: 160, b: 255})
+    app.gg.draw_square_filled(1040, 266, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 266, 20,  gx.Color{r: 255, g: 160, b: 255})
 
 	app.gg.draw_text(840, 295, "Pick a rock (size->scroll): ", text_cfg)
-    app.gg.draw_rounded_rect_filled(1040, 296, 20, 20, 4,  gx.Color{255,182,193,255})
+    app.gg.draw_square_filled(1040, 296, 20,  gx.Color{255,182,193,255})
 
 
 	if app.portable_parti{
