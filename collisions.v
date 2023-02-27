@@ -241,58 +241,60 @@ fn (mut app App) solve_collisions(){
 				for x in -1..2{
 					x_index := parti.opti_x+x
 					if x_index >= 0 && x_index < app.array_width_max{
-						remove_particles = []
 						array_dest = &app.list_opti[y_index][x_index]
-						for o_i, mut other in array_dest{
-							dist_x := parti.x - other.x
-							dist_y := parti.y - other.y
-							mut dist := dist_x * dist_x + dist_y * dist_y
-							min_dist := parti.radius + other.radius
-							// Check overlapping
-							if dist < min_dist * min_dist && dist >= 1{
-								dist = sqrt(dist)
-								n_x := dist_x / dist
-								n_y := dist_y / dist
-								delta := half_response_coef * (dist - min_dist)
-								mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
-								mass_ratio_b := (other.fradius / min_dist) * delta
-								// Update positions
-								xb := n_x * (mass_ratio_b)
-								yb := n_y * (mass_ratio_b)
-								xa := n_x * (mass_ratio_a)
-								ya := n_y * (mass_ratio_a)
-								parti.x -= xb
-								parti.y -= yb
-								other.x += xa
-								other.y += ya
-								if app.pression_view{
-									parti.pression += m.abs(xb + yb)
-									other.pression += m.abs(xa + ya)
+						if array_dest.len > 0{
+							remove_particles = []
+							for o_i, mut other in array_dest{
+								dist_x := parti.x - other.x
+								dist_y := parti.y - other.y
+								mut dist := dist_x * dist_x + dist_y * dist_y
+								min_dist := parti.radius + other.radius
+								// Check overlapping
+								if dist < min_dist * min_dist && dist >= 0.1{
+									dist = sqrt(dist)
+									n_x := dist_x / dist
+									n_y := dist_y / dist
+									delta := half_response_coef * (dist - min_dist)
+									mass_ratio_a := (parti.fradius / min_dist) * delta  //not just mass ratio
+									mass_ratio_b := (other.fradius / min_dist) * delta
+									// Update positions
+									xb := n_x * (mass_ratio_b)
+									yb := n_y * (mass_ratio_b)
+									xa := n_x * (mass_ratio_a)
+									ya := n_y * (mass_ratio_a)
+									parti.x -= xb
+									parti.y -= yb
+									other.x += xa
+									other.y += ya
+									if app.pression_view{
+										parti.pression += m.abs(xb + yb)
+										other.pression += m.abs(xa + ya)
+									}
+									if app.carre_circle{
+										other.correct_constraints_circle()
+									}else{
+										other.correct_constraints_square()
+									}
+									remove_particles << unsafe{array_dest[o_i]}
+								}
+							}
+							for ok_i, mut other_killed in remove_particles{
+								array_dest.delete(other_killed.id)
+								for u in other_killed.id..array_dest.len{
+									unsafe{array_dest[u].id -= 1}
 								}
 								if app.carre_circle{
-									other.correct_constraints_circle()
+									other_killed.correct_constraints_circle()
 								}else{
-									other.correct_constraints_square()
+									other_killed.correct_constraints_square()
 								}
-								remove_particles << unsafe{array_dest[o_i]}
+								new_loc_y := int(other_killed.y/(2*(app.max_parti_size-1)))
+								new_loc_x := int(other_killed.x/(2*(app.max_parti_size-1)))
+								app.list_opti[new_loc_y][new_loc_x] << remove_particles[ok_i]
+								other_killed.id = app.list_opti[new_loc_y][new_loc_x].len-1
+								other_killed.opti_x = new_loc_x
+								other_killed.opti_y = new_loc_y
 							}
-						}
-						for ok_i, mut other_killed in remove_particles{
-							array_dest.delete(other_killed.id)
-							for u in other_killed.id..array_dest.len{
-								unsafe{array_dest[u].id -= 1}
-							}
-							if app.carre_circle{
-								other_killed.correct_constraints_circle()
-							}else{
-								other_killed.correct_constraints_square()
-							}
-							new_loc_y := int(other_killed.y/(2*(app.max_parti_size-1)))
-							new_loc_x := int(other_killed.x/(2*(app.max_parti_size-1)))
-							app.list_opti[new_loc_y][new_loc_x] << remove_particles[ok_i]
-							other_killed.id = app.list_opti[new_loc_y][new_loc_x].len-1
-							other_killed.opti_x = new_loc_x
-							other_killed.opti_y = new_loc_y
 						}
 					}
 				}
