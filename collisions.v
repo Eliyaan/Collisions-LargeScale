@@ -2,7 +2,6 @@ module main
 import gg
 import gx
 import rand as rd
-import math as m
 import time
 
 
@@ -145,6 +144,15 @@ fn (mut parti Particle) accelerate(new_acc_x f64, new_acc_y f64){
 }
 
 
+[inline]
+fn abs(x f64) f64{
+	if x < 0{
+		return -x
+	}
+	return x
+}
+
+
 [heap]
 struct App {
 mut:
@@ -216,12 +224,27 @@ fn main() {
     )
 
 	app.pow_radius = (4*app.parti_size*app.parti_size)
-	app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
-	app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+	app.array_height_max = int(ceil(win_height/f64(2*(app.max_parti_size-1))))
+	app.array_width_max = int(ceil(win_width/f64(2*(app.max_parti_size-1))))
 	app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 
     //lancement du programme/de la fenêtre
     app.gg.run()
+}
+
+
+[inline]
+fn floor(x f64) int {
+	return int(x)
+}
+
+
+[inline]
+fn ceil(x f64) f64 {
+	if x < 0{
+		return int(x)-1
+	}
+	return int(x)+1
 }
 
 
@@ -267,8 +290,8 @@ fn (mut app App) solve_collisions(){
 									other.x += xa
 									other.y += ya
 									if app.pression_view{
-										parti.pression += m.abs(xb + yb)
-										other.pression += m.abs(xa + ya)
+										parti.pression += abs(xb + yb)
+										other.pression += abs(xa + ya)
 									}
 									if app.carre_circle{
 										other.correct_constraints_circle()
@@ -336,7 +359,7 @@ fn (mut app App) solve_portable_parti(){
 			other.x += xa
 			other.y += ya
 			if app.pression_view{
-				other.pression += m.abs(xa + ya)
+				other.pression += abs(xa + ya)
 			}
 		}
 	}
@@ -519,8 +542,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size -= 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size -= 1
-					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
-					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+					app.array_height_max = int(ceil(win_height/f64(2*(app.max_parti_size-1))))
+					app.array_width_max = int(ceil(win_width/f64(2*(app.max_parti_size-1))))
 					app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 					app.list_parti = []
 					app.mouse_pressed = false}
@@ -541,8 +564,8 @@ fn (mut app App) check_buttons(){
 				(app.mouse_y > 236 && app.mouse_y < 256){app.min_parti_size += 1
 					app.mouse_pressed = false}
 				(app.mouse_y > 266 && app.mouse_y < 286){app.max_parti_size += 1
-					app.array_height_max = int(m.ceil(win_height/f64(2*(app.max_parti_size-1))))
-					app.array_width_max = int(m.ceil(win_width/f64(2*(app.max_parti_size-1))))
+					app.array_height_max = int(ceil(win_height/f64(2*(app.max_parti_size-1))))
+					app.array_width_max = int(ceil(win_width/f64(2*(app.max_parti_size-1))))
 					app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 					app.list_parti = []
 					app.mouse_pressed = false}
