@@ -3,16 +3,7 @@ import gg
 import gx
 import rand as rd
 import time
-
-
-/*
-Fix les array out of range 
-remet la sqrt puis bidouiller avec les deux autres fonctions et tout (dans la branch test mais sont stashed)
-
-
-
-*/
-
+import math as m
 
 const (
     win_width    = 600
@@ -28,14 +19,12 @@ const (
 
 [inline]
 fn f64_bits(f f64) u64 {
-	p := *unsafe { &u64(&f) }
-	return p
+	return *unsafe { &u64(&f) }
 }
 
 [inline]
 fn f64_from_bits(b u64) f64 {
-	p := *unsafe { &f64(&b) }
-	return p
+	return *unsafe { &f64(&b) }
 }
 
 [inline]
@@ -145,11 +134,8 @@ fn (mut parti Particle) accelerate(new_acc_x f64, new_acc_y f64){
 
 
 [inline]
-fn abs(x f64) f64{
-	if x < 0{
-		return -x
-	}
-	return x
+fn abs(a f64) f64{
+	return if a < 0{-a}else{a}
 }
 
 
@@ -183,6 +169,9 @@ mut:
 
 	portable_parti_size int = 6
 	portable_parti bool
+
+	hori_mult f64 
+	verti_mult f64 = 1
 }
 
 [direct_array_access]
@@ -241,10 +230,7 @@ fn floor(x f64) int {
 
 [inline]
 fn ceil(x f64) f64 {
-	if x < 0{
-		return int(x)-1
-	}
-	return int(x)+1
+	return if x < 0{int(x)-1}else{int(x)+1}
 }
 
 
@@ -377,7 +363,7 @@ fn on_frame(mut app App) {
 	}
 	for _ in 0..int(app.substeps){
 		for mut parti in app.list_parti{
-			parti.accelerate(0, 10000/app.substeps)
+			parti.accelerate((10000*app.hori_mult)/app.substeps, (10000*app.verti_mult)/app.substeps)
 			parti.pression = 0
 		}
 		for mut parti in app.list_parti{
@@ -470,6 +456,14 @@ fn on_frame(mut app App) {
 	app.gg.draw_text(840, 295, "Pick a rock (size->scroll): ", text_cfg)
     app.gg.draw_square_filled(1040, 296, 20,  gx.Color{255,182,193,255})
 
+	app.gg.draw_text(840, 325, "Vertical grav: ${app.verti_mult}", text_cfg)
+    app.gg.draw_square_filled(1040, 326, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 326, 20,  gx.Color{r: 255, g: 160, b: 255})
+
+	app.gg.draw_text(840, 355, "Horizontal grav: ${app.hori_mult}", text_cfg)
+    app.gg.draw_square_filled(1040, 356, 20,  gx.Color{r: 230, g: 200, b: 255})
+	app.gg.draw_square_filled(1070, 356, 20,  gx.Color{r: 255, g: 160, b: 255})
+
 
 	if app.portable_parti{
 		app.gg.draw_circle_filled(app.mouse_x, app.mouse_y, app.portable_parti_size, gx.gray)
@@ -549,6 +543,10 @@ fn (mut app App) check_buttons(){
 					app.mouse_pressed = false}
 				(app.mouse_y > 296 && app.mouse_y < 316){app.portable_parti = !app.portable_parti
 					app.mouse_pressed = false}
+				(app.mouse_y > 326 && app.mouse_y < 346){app.verti_mult = m.round_sig(app.verti_mult-0.1, 2)
+					app.mouse_pressed = false}
+				(app.mouse_y > 356 && app.mouse_y < 376){app.hori_mult = m.round_sig(app.hori_mult-0.1, 2)
+					app.mouse_pressed = false}
                 else{}
             }
         }else if app.mouse_x > 1070{
@@ -568,6 +566,10 @@ fn (mut app App) check_buttons(){
 					app.array_width_max = int(ceil(win_width/f64(2*(app.max_parti_size-1))))
 					app.list_opti = [][][]&Particle{len:app.array_height_max, init:[][]&Particle{len:app.array_width_max, init:[]&Particle{}}}
 					app.list_parti = []
+					app.mouse_pressed = false}
+				(app.mouse_y > 326 && app.mouse_y < 346){app.verti_mult = m.round_sig(app.verti_mult+0.1, 2)
+					app.mouse_pressed = false}
+				(app.mouse_y > 356 && app.mouse_y < 376){app.hori_mult = m.round_sig(app.hori_mult+0.1, 2)
 					app.mouse_pressed = false}
                 else{}
             }
