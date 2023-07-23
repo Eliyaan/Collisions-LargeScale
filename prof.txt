@@ -1,0 +1,15 @@
+      90076683         49.865ms              1ns __new_array_with_default 
+      52050178         88.063ms              2ns array_ensure_cap 
+      54006723        141.356ms              3ns array_delete 
+      54006723        120.431ms              2ns array_delete_many 
+     108010316        160.046ms              1ns array_push 
+     120925488         20.711ms              0ns ArrayFlags_has 
+      21981534         10.209ms              0ns sokol__sgl__v2f 
+          1565         84.672ms          54103ns sokol__sgl__draw 
+      77680134         13.447ms              0ns main__f64_from_bits 
+      38840067         35.491ms              1ns main__frexp 
+      38840067         20.817ms              1ns main__scalbn 
+      38840067         78.653ms              2ns main__sqrt 
+             1        720.712ms      720711736ns main__main 
+         12520        546.728ms          43668ns main__App_solve_collisions 
+          1565        716.739ms         457980ns main__on_frame 

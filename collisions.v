@@ -174,6 +174,7 @@ mut:
 	verti_mult f64 = 1
 }
 
+[inline]
 [direct_array_access]
 fn (mut app App) init_opti_list(){
 	for mut list_of_list in app.list_opti{
@@ -276,8 +277,8 @@ fn (mut app App) solve_collisions(){
 									other.x += xa
 									other.y += ya
 									if app.pression_view{
-										parti.pression += abs(xb + yb)
-										other.pression += abs(xa + ya)
+										parti.pression += abs(xb)+ abs(yb)
+										other.pression += abs(xa) + abs(ya)
 									}
 									if app.carre_circle{
 										other.correct_constraints_circle()
@@ -472,7 +473,7 @@ fn on_frame(mut app App) {
     app.gg.end()
 }
 
-
+[inline]
 [direct_array_access]
 fn on_event(e &gg.Event, mut app App){
 	app.mouse_x = e.mouse_x
@@ -506,15 +507,19 @@ fn on_event(e &gg.Event, mut app App){
 
 
 [inline]
+[direct_array_access]
 fn (mut app App) spawn_parti(){
 	if app.mouse_x < win_width && app.mouse_y < win_height{
-		radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
-		app.list_parti << Particle{app.mouse_x, app.mouse_y, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0, 0, 0}
+		for _ in 0..5{
+			radius := rd.int_in_range(app.min_parti_size, app.max_parti_size) or {12}
+			app.list_parti << Particle{app.mouse_x+rd.f64_in_range(-2, 2)or{panic(err)}, app.mouse_y+rd.f64_in_range(-2, 2)or{panic(err)}, radius, f32(radius), app.mouse_x, app.mouse_y, 0, 0, 0, 0, 0, 0, 0, 0}
+		}
 	}
 }
 
 
 [inline]
+[direct_array_access]
 fn (mut app App) check_buttons(){
     if app.mouse_x > 1040 && app.mouse_x < 1090{
         if app.mouse_x < 1060{
