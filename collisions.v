@@ -153,6 +153,8 @@ mut:
 
 	hori_mult  f64
 	verti_mult f64 = 1
+	
+	remove_particles []&Particle = []&Particle{len: 50, init: unsafe { nil }}
 }
 
 @[direct_array_access; inline]
@@ -197,6 +199,7 @@ fn main() {
 	app.list_opti = [][][]&Particle{len: app.array_height_max, init: [][]&Particle{len: app.array_width_max, init: []&Particle{}}}
 
 	// lancement du programme/de la fenêtre
+	spawn app.compute()
 	app.gg.run()
 }
 
@@ -212,7 +215,6 @@ fn ceil(x f64) f64 {
 
 @[inline; direct_array_access]
 fn (mut app App) solve_collisions() {
-	mut remove_particles := []&Particle{len: 50, init: unsafe { nil }}
 	mut rp_top := 0 // index of next item in remove_particles
 	for mut parti in app.list_parti {
 		mut array_dest := app.list_opti[parti.opti_y][parti.opti_x]
@@ -262,14 +264,14 @@ fn (mut app App) solve_collisions() {
 										other.correct_constraints_square()
 									}
 									assert o_i == array_dest[o_i].id
-									remove_particles[rp_top] or {
+									app.remove_particles[rp_top] or {
 										panic('remove_particles too small')
 									} = array_dest[o_i]
 									rp_top++
 								}
 							}
 							for ok_i in 0 .. rp_top {
-								mut other_killed := remove_particles[ok_i]
+								mut other_killed := app.remove_particles[ok_i]
 								array_dest[other_killed.id] = unsafe { nil }
 								if app.carre_circle {
 									other_killed.correct_constraints_circle()
@@ -281,7 +283,7 @@ fn (mut app App) solve_collisions() {
 								mut found := false
 								for new_i in 0 .. app.list_opti[new_loc_y][new_loc_x].len {
 									if app.list_opti[new_loc_y][new_loc_x][new_i] == unsafe { nil } {
-										app.list_opti[new_loc_y][new_loc_x][new_i] = remove_particles[ok_i]
+										app.list_opti[new_loc_y][new_loc_x][new_i] = app.remove_particles[ok_i]
 										found = true
 										other_killed.id = new_i
 										// assert app.list_opti[new_loc_y][new_loc_x][new_i].id == new_i
@@ -289,7 +291,7 @@ fn (mut app App) solve_collisions() {
 									}
 								}
 								if !found {
-									app.list_opti[new_loc_y][new_loc_x] << remove_particles[ok_i]
+									app.list_opti[new_loc_y][new_loc_x] << app.remove_particles[ok_i]
 									other_killed.id = app.list_opti[new_loc_y][new_loc_x].len - 1
 									// assert app.list_opti[new_loc_y][new_loc_x].last().id == app.list_opti[new_loc_y][new_loc_x].len - 1
 								}
@@ -354,38 +356,47 @@ fn (mut app App) solve_portable_parti() {
 	}
 }
 
-@[direct_array_access; inline]
-fn on_frame(mut app App) {
-	if app.mouse_pressed {
-		if !app.portable_parti {
-			app.spawn_parti()
-		}
-		app.check_buttons()
-		app.init_opti_list()
-	}
-	for _ in 0 .. int(app.substeps) {
-		for mut parti in app.list_parti {
-			parti.accelerate((10000 * app.hori_mult) / app.substeps, (10000 * app.verti_mult) / app.substeps)
-			parti.pression = 0
-		}
-		for mut parti in app.list_parti {
-			parti.update_pos(dt / app.substeps)
-		}
-		if app.carre_circle {
-			for mut parti in app.list_parti {
-				parti.correct_constraints_circle()
+fn (mut app App) compute() {
+	for {
+		if app.mouse_pressed {
+			if !app.portable_parti {
+				app.spawn_parti()
 			}
-		} else {
+			app.check_buttons()
+			app.init_opti_list()
+		}
+		for _ in 0 .. int(app.substeps) {
 			for mut parti in app.list_parti {
-				parti.correct_constraints_square()
+				parti.accelerate((10000 * app.hori_mult) / app.substeps, (10000 * app.verti_mult) / app.substeps)
+				parti.pression = 0
+			}
+			for mut parti in app.list_parti {
+				parti.update_pos(dt / app.substeps)
+			}
+			if app.carre_circle {
+				for mut parti in app.list_parti {
+					parti.correct_constraints_circle()
+				}
+			} else {
+				for mut parti in app.list_parti {
+					parti.correct_constraints_square()
+				}
+			}
+
+			app.solve_collisions()
+			if app.portable_parti {
+				app.solve_portable_parti() // TODO : reassign de list
 			}
 		}
 
-		app.solve_collisions()
-		if app.portable_parti {
-			app.solve_portable_parti() // TODO : reassign de list
-		}
+		app.fps_counter.delete(0)
+		app.fps_counter << (time.now() - app.time_last_frame).milliseconds()
+		app.time_last_frame = time.now()
 	}
+}
+
+@[direct_array_access; inline]
+fn on_frame(mut app App) {
 	// Draw
 	app.gg.begin()
 	if app.carre_circle {
@@ -413,10 +424,7 @@ fn on_frame(mut app App) {
 		fpstime += elem
 	}
 	fpstime /= app.fps_counter.len
-	app.gg.draw_text(840, 585, 'FPS: ${1000 / (fpstime + 1)}', text_cfg)
-	app.fps_counter.delete(0)
-	app.fps_counter << (time.now() - app.time_last_frame).milliseconds()
-	app.time_last_frame = time.now()
+	app.gg.draw_text(840, 585, 'ComputePS: ${1000 / (fpstime + 1)}', text_cfg)
 
 	app.gg.draw_text(840, 555, 'Nb particles: ${app.list_parti.len}', text_cfg)
 
