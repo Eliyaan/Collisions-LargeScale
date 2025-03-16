@@ -215,6 +215,7 @@ fn ceil(x f64) f64 {
 
 @[inline; direct_array_access]
 fn (mut app App) solve_collisions() {
+	// sw := time.new_stopwatch(); defer { eprintln('> ${@FN} ${sw.elapsed().microseconds():6} us') }
 	mut rp_top := 0 // index of next item in remove_particles
 	for mut parti in app.list_parti {
 		mut array_dest := app.list_opti[parti.opti_y][parti.opti_x]
@@ -385,8 +386,10 @@ fn (mut app App) compute() {
 
 			app.solve_collisions()
 			if app.portable_parti {
-				app.solve_portable_parti() // TODO : reassign de list
+				app.solve_portable_parti() // TODO : pretty bad?! -> forgot to update the opti array so missplaced particles 
 			}
+			
+			// TODO: if particule has too much momentum -> max_momentum
 		}
 
 		app.fps_counter.delete(0)
@@ -426,6 +429,8 @@ fn on_frame(mut app App) {
 	fpstime /= app.fps_counter.len
 	app.gg.draw_text(840, 585, 'ComputePS: ${1000 / (fpstime + 1)}', text_cfg)
 
+// TODO: make all UI pos variables
+
 	app.gg.draw_text(840, 555, 'Nb particles: ${app.list_parti.len}', text_cfg)
 
 	app.gg.draw_text(840, 25, 'Pression view: ', text_cfg)
@@ -461,7 +466,7 @@ fn on_frame(mut app App) {
 	app.gg.draw_square_filled(1040, 266, 20, gx.Color{ r: 230, g: 200, b: 255 })
 	app.gg.draw_square_filled(1070, 266, 20, gx.Color{ r: 255, g: 160, b: 255 })
 
-	app.gg.draw_text(840, 295, 'Pick a rock (size->scroll): ', text_cfg)
+	app.gg.draw_text(840, 295, 'Pick a rock (r) (size->scroll): ', text_cfg)
 	app.gg.draw_square_filled(1040, 296, 20, gx.Color{255, 182, 193, 255})
 
 	app.gg.draw_text(840, 325, 'Vertical grav: ${app.verti_mult}', text_cfg)
@@ -487,6 +492,9 @@ fn on_event(e &gg.Event, mut app App) {
 		.key_down {
 			match e.key_code {
 				.escape { app.gg.quit() }
+				.r {
+					app.portable_parti = !app.portable_parti
+				}
 				else {}
 			}
 		}
