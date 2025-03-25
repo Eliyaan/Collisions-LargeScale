@@ -229,7 +229,7 @@ fn (mut app App) solve_collisions() {
 						array_dest = app.list_opti[y_index][x_index]
 						if array_dest.len > 0 {
 							rp_top = 0
-							for o_i in 0 .. array_dest.len {
+							for o_i in 0 .. array_dest.len { // for each particle in the same chunk
 								if array_dest[o_i] == unsafe { nil } {
 									continue
 								}
@@ -239,8 +239,12 @@ fn (mut app App) solve_collisions() {
 								mut dist := dist_x * dist_x + dist_y * dist_y
 								min_dist := parti.radius + other.radius
 								// Check overlapping
-								if dist < min_dist * min_dist && dist >= 0.1 {
-									dist = sqrt(dist)
+								if dist < min_dist * min_dist {
+									if dist < 0.2 { 
+										dist = 0.2
+									} else {
+										dist = sqrt(dist)
+									}
 									n_x := dist_x / dist
 									n_y := dist_y / dist
 									delta := half_response_coef * (dist - min_dist)
@@ -339,8 +343,12 @@ fn (mut app App) solve_portable_parti() {
 		mut dist := dist_x * dist_x + dist_y * dist_y
 		min_dist := f32(app.portable_parti_size + other.radius)
 		// Check overlapping
-		if dist < min_dist * min_dist && dist >= 1 {
-			dist = sqrt(dist)
+		if dist < min_dist * min_dist {
+			if dist < 0.2 { 
+				dist = 0.2
+			} else {
+				dist = sqrt(dist)
+			}
 			n_x := dist_x / dist
 			n_y := dist_y / dist
 			delta := half_response_coef * (dist - min_dist)
