@@ -264,9 +264,28 @@ fn (mut app App) solve_collisions() {
 										other.pression += abs(xa) + abs(ya)
 									}
 									if app.carre_circle {
-										other.correct_constraints_circle()
+										to_obj_x := big_circle_pos - other.x
+										to_obj_y := big_circle_pos - other.y
+										mut dist_c := to_obj_x * to_obj_x + to_obj_y * to_obj_y
+										normal_dist := big_circle_radius - other.radius
+										if dist_c > normal_dist * normal_dist {
+											dist_c = sqrt(dist_c)
+											n_x_c := to_obj_x / dist_c
+											n_y_c := to_obj_y / dist_c
+											other.x = big_circle_pos - n_x_c * normal_dist
+											other.y = big_circle_pos - n_y_c * normal_dist // thales
+										}
 									} else {
-										other.correct_constraints_square()
+										if other.y + other.radius >= win_height {
+											other.y += win_height - (other.y + other.radius)
+										} else if other.y - other.radius < 0 {
+											other.y += -(other.y - other.radius)
+										}
+										if other.x + other.radius >= win_width {
+											other.x += win_width - (other.x + other.radius)
+										} else if other.x - other.radius < 0 {
+											other.x += -(other.x - other.radius)
+										}
 									}
 									assert o_i == array_dest[o_i].id
 									app.remove_particles[rp_top] or {
@@ -401,8 +420,9 @@ fn (mut app App) compute() {
 		}
 
 		app.fps_counter.delete(0)
-		app.fps_counter << (time.now() - app.time_last_frame).milliseconds()
-		app.time_last_frame = time.now()
+		now := time.now()
+		app.fps_counter << (now - app.time_last_frame).milliseconds()
+		app.time_last_frame = now
 	}
 }
 
