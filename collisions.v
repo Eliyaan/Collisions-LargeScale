@@ -1,7 +1,6 @@
 module main
 
 import gg
-import gx
 import rand as rd
 import time
 import math as m
@@ -10,12 +9,12 @@ const multithreaded = true
 
 const win_width = 600
 const win_height = 600
-const bg_color = gx.white
+const bg_color = gg.white
 const dt = 0.016
 const big_circle_radius = 300
 const big_circle_pos = 300
-const text_cfg = gx.TextCfg{
-	color:          gx.black
+const text_cfg = gg.TextCfg{
+	color:          gg.black
 	size:           20
 	align:          .left
 	vertical_align: .top
@@ -420,22 +419,22 @@ fn on_frame(mut app App) {
 	// Draw
 	app.gg.begin()
 	if app.carre_circle {
-		app.gg.draw_circle_filled(300, 300, 300, gx.black)
+		app.gg.draw_circle_filled(300, 300, 300, gg.black)
 	} else {
-		app.gg.draw_square_filled(0, 0, 600, gx.black)
+		app.gg.draw_square_filled(0, 0, 600, gg.black)
 	}
 	if app.pression_view {
 		for parti in app.list_parti {
 			pression := parti.pression * 82
 			if pression > 255 {
-				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{163, 0, 38, 255})
+				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gg.Color{163, 0, 38, 255})
 			} else {
-				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{255, 255 - u8(pression), 255 - u8(pression), 255})
+				app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gg.Color{255, 255 - u8(pression), 255 - u8(pression), 255})
 			}
 		}
 	} else {
 		for parti in app.list_parti {
-			app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gx.Color{u8(parti.radius * app.red_factor % 255), u8(parti.radius * app.green_factor % 255), u8(parti.radius * app.blue_factor % 255), 255})
+			app.gg.draw_circle_filled(f32(parti.x), f32(parti.y), parti.radius, gg.Color{u8(parti.radius * app.red_factor % 255), u8(parti.radius * app.green_factor % 255), u8(parti.radius * app.blue_factor % 255), 255})
 		}
 	}
 
@@ -451,51 +450,51 @@ fn on_frame(mut app App) {
 	app.gg.draw_text(840, 555, 'Nb particles: ${app.list_parti.len}', text_cfg)
 
 	app.gg.draw_text(840, 25, 'Pression view: ', text_cfg)
-	app.gg.draw_square_filled(1040, 26, 20, gx.Color{255, 182, 193, 255})
+	app.gg.draw_square_filled(1040, 26, 20, gg.Color{255, 182, 193, 255})
 
 	app.gg.draw_text(840, 55, 'Square/Circle: ', text_cfg)
-	app.gg.draw_square_filled(1040, 56, 20, gx.Color{255, 182, 193, 255})
+	app.gg.draw_square_filled(1040, 56, 20, gg.Color{255, 182, 193, 255})
 
 	app.gg.draw_text(840, 85, 'Nb substeps: ${app.substeps}', text_cfg)
-	app.gg.draw_square_filled(1040, 86, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 86, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 86, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 86, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 115, 'Reset the particles: ', text_cfg)
-	app.gg.draw_square_filled(1040, 116, 20, gx.Color{255, 182, 193, 255})
+	app.gg.draw_square_filled(1040, 116, 20, gg.Color{255, 182, 193, 255})
 
 	app.gg.draw_text(840, 145, 'Red Factor: ${app.red_factor}', text_cfg)
-	app.gg.draw_square_filled(1040, 146, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 146, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 146, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 146, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 175, 'Green Factor: ${app.green_factor}', text_cfg)
-	app.gg.draw_square_filled(1040, 176, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 176, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 176, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 176, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 205, 'Blue Factor: ${app.blue_factor}', text_cfg)
-	app.gg.draw_square_filled(1040, 206, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 206, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 206, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 206, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 235, 'Min parti size: ${app.min_parti_size}', text_cfg)
-	app.gg.draw_square_filled(1040, 236, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 236, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 236, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 236, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 265, 'Max parti size: ${app.max_parti_size - 1}', text_cfg)
-	app.gg.draw_square_filled(1040, 266, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 266, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 266, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 266, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 295, 'Pick a rock (r) (size->scroll): ', text_cfg)
-	app.gg.draw_square_filled(1040, 296, 20, gx.Color{255, 182, 193, 255})
+	app.gg.draw_square_filled(1040, 296, 20, gg.Color{255, 182, 193, 255})
 
 	app.gg.draw_text(840, 325, 'Vertical grav: ${app.verti_mult}', text_cfg)
-	app.gg.draw_square_filled(1040, 326, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 326, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 326, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 326, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	app.gg.draw_text(840, 355, 'Horizontal grav: ${app.hori_mult}', text_cfg)
-	app.gg.draw_square_filled(1040, 356, 20, gx.Color{ r: 230, g: 200, b: 255 })
-	app.gg.draw_square_filled(1070, 356, 20, gx.Color{ r: 255, g: 160, b: 255 })
+	app.gg.draw_square_filled(1040, 356, 20, gg.Color{ r: 230, g: 200, b: 255 })
+	app.gg.draw_square_filled(1070, 356, 20, gg.Color{ r: 255, g: 160, b: 255 })
 
 	if app.portable_parti {
-		app.gg.draw_circle_filled(app.mouse_x, app.mouse_y, app.portable_parti_size, gx.gray)
+		app.gg.draw_circle_filled(app.mouse_x, app.mouse_y, app.portable_parti_size, gg.gray)
 	}
 
 	app.gg.end()
